@@ -1,0 +1,2605 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="./manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <title>梅花易數 ☯ 智能占卜系統</title>
+  
+  <!-- Font Styles -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&family=Outfit:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- CDNs -->
+  <!-- React 18 & ReactDOM 18 -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel for parsing JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Tailwind CSS v3 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- cnchar for character stroke counting -->
+  <script src="https://cdn.jsdelivr.net/npm/cnchar/cnchar.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cnchar-trad/cnchar.trad.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'PingFang TC', 'Microsoft JhengHei', 'sans-serif'],
+            serif: ['Noto Serif TC', 'Georgia', 'serif'],
+          },
+          colors: {
+            gold: {
+              50: '#fffdf0',
+              100: '#fef7be',
+              200: '#fdf08a',
+              300: '#fbe24e',
+              400: '#f8d01e',
+              500: '#d4af37', // Classic Bronze Gold
+              600: '#b89025',
+              700: '#946f1c',
+              800: '#755419',
+              900: '#614418',
+            },
+            jade: {
+              50: '#f1f8f6',
+              100: '#dbeee9',
+              200: '#b8dd34',
+              300: '#8bcbbf',
+              400: '#5ca294',
+              500: '#4e8b72', // Ancient Jade Green
+              600: '#34614e',
+              700: '#284c3e',
+              800: '#1f3c32',
+              900: '#1b322a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    /* Custom Styling & Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(212, 175, 55, 0.2);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(212, 175, 55, 0.4);
+    }
+
+    body {
+      background-color: #080a09;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(27, 50, 42, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(212, 175, 55, 0.05) 0%, transparent 45%);
+      background-attachment: fixed;
+    }
+
+    /* Keyframe Animations */
+    @keyframes spin-slow {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .animate-spin-slow {
+      animation: spin-slow 20s linear infinite;
+    }
+
+    @keyframes shake-shell {
+      0%, 100% { transform: rotate(0deg) translate(0, 0); }
+      10% { transform: rotate(-5deg) translate(-2px, -1px); }
+      20% { transform: rotate(5deg) translate(2px, 1px); }
+      30% { transform: rotate(-6deg) translate(-1px, 2px); }
+      40% { transform: rotate(6deg) translate(3px, -1px); }
+      50% { transform: rotate(-4deg) translate(-2px, 1px); }
+      60% { transform: rotate(4deg) translate(2px, -2px); }
+      70% { transform: rotate(-5deg) translate(-1px, 1px); }
+      80% { transform: rotate(5deg) translate(1px, -1px); }
+      90% { transform: rotate(-2deg) translate(-2px, 2px); }
+    }
+    .animate-shake-shell {
+      animation: shake-shell 0.2s infinite;
+    }
+
+    @keyframes gold-shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .btn-shimmer {
+      background: linear-gradient(90deg, #946f1c 25%, #f8d01e 50%, #946f1c 75%);
+      background-size: 200% auto;
+      animation: gold-shimmer 4s linear infinite;
+    }
+    .btn-shimmer:hover {
+      animation: gold-shimmer 1.5s linear infinite;
+    }
+
+    /* Breath Animation for Moving Yao */
+    @keyframes yao-glow {
+      0%, 100% {
+        box-shadow: 0 0 4px rgba(251, 191, 36, 0.4);
+        filter: brightness(1);
+      }
+      50% {
+        box-shadow: 0 0 15px rgba(251, 191, 36, 0.8);
+        filter: brightness(1.25);
+      }
+    }
+    .animate-yao-glow {
+      animation: yao-glow 1.5s infinite ease-in-out;
+    }
+
+    /* Glassmorphism Classes */
+    .glass-card {
+      background: rgba(20, 24, 22, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(212, 175, 55, 0.08);
+    }
+    .glass-card-hover:hover {
+      border-color: rgba(212, 175, 55, 0.2);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+      transition: all 0.3s ease;
+    }
+
+    /* Coin toss animations */
+    @keyframes coin-fall-1 {
+      0% { transform: translate(0, -60px) rotateX(0deg) rotateY(0deg) scale(0.5); opacity: 0; }
+      20% { opacity: 1; }
+      100% { transform: translate(-70px, 120px) rotateX(720deg) rotateY(360deg) scale(1); opacity: 0; }
+    }
+    @keyframes coin-fall-2 {
+      0% { transform: translate(0, -60px) rotateX(0deg) rotateY(0deg) scale(0.5); opacity: 0; }
+      20% { opacity: 1; }
+      100% { transform: translate(0, 140px) rotateX(-540deg) rotateY(720deg) scale(1.1); opacity: 0; }
+    }
+    @keyframes coin-fall-3 {
+      0% { transform: translate(0, -60px) rotateX(0deg) rotateY(0deg) scale(0.5); opacity: 0; }
+      20% { opacity: 1; }
+      100% { transform: translate(70px, 120px) rotateX(1080deg) rotateY(-360deg) scale(1); opacity: 0; }
+    }
+    .animate-coin-1 { animation: coin-fall-1 1.2s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+    .animate-coin-2 { animation: coin-fall-2 1.2s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s; }
+    .animate-coin-3 { animation: coin-fall-3 1.2s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.6s; }
+
+    /* 3D Coin Divination Sandbox Styles */
+    .perspective-sandbox {
+      perspective: 1000px;
+      transform-style: preserve-3d;
+    }
+    .coin-container-3d {
+      width: 46px;
+      height: 46px;
+      position: absolute;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+    .coin-3d {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.1s linear;
+    }
+    .coin-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 2px 5px rgba(255,255,255,0.2), 0 4px 10px rgba(0,0,0,0.4);
+    }
+    .coin-front {
+      background: linear-gradient(135deg, #fce074 0%, #d4af37 50%, #b38600 100%);
+      border: 2px solid #8f6b00;
+      transform: rotateY(0deg);
+    }
+    .coin-back {
+      background: linear-gradient(135deg, #e3c45b 0%, #c49a21 50%, #9e7500 100%);
+      border: 2px solid #7c5d00;
+      transform: rotateY(180deg);
+    }
+
+    @keyframes throw-coin-1 {
+      0% { transform: translate3d(0, -60px, 150px) rotateX(0deg) rotateY(0deg) scale(0.4); opacity: 0; }
+      10% { opacity: 1; }
+      30% { transform: translate3d(-35px, -10px, 80px) rotateX(270deg) rotateY(180deg) scale(1.1); }
+      55% { transform: translate3d(-70px, 50px, 0px) rotateX(540deg) rotateY(360deg) scale(1.0); } /* Bounce 1 */
+      70% { transform: translate3d(-80px, 30px, 20px) rotateX(680deg) rotateY(450deg) scale(1.0); }
+      85% { transform: translate3d(-88px, 45px, 0px) rotateX(760deg) rotateY(520deg) scale(1.0); } /* Bounce 2 */
+      100% { transform: translate3d(-92px, 40px, 0px) rotateX(var(--target-rx)) rotateY(var(--target-ry)) scale(1.0); }
+    }
+    @keyframes throw-coin-2 {
+      0% { transform: translate3d(0, -60px, 150px) rotateX(0deg) rotateY(0deg) scale(0.4); opacity: 0; }
+      10% { opacity: 1; }
+      30% { transform: translate3d(0px, -20px, 90px) rotateX(180deg) rotateY(270deg) scale(1.15); }
+      55% { transform: translate3d(5px, 60px, 0px) rotateX(450deg) rotateY(540deg) scale(1.0); } /* Bounce 1 */
+      70% { transform: translate3d(10px, 40px, 30px) rotateX(580deg) rotateY(630deg) scale(1.0); }
+      85% { transform: translate3d(12px, 55px, 0px) rotateX(670deg) rotateY(700deg) scale(1.0); } /* Bounce 2 */
+      100% { transform: translate3d(15px, 50px, 0px) rotateX(var(--target-rx)) rotateY(var(--target-ry)) scale(1.0); }
+    }
+    @keyframes throw-coin-3 {
+      0% { transform: translate3d(0, -60px, 150px) rotateX(0deg) rotateY(0deg) scale(0.4); opacity: 0; }
+      10% { opacity: 1; }
+      30% { transform: translate3d(35px, -10px, 80px) rotateX(-270deg) rotateY(-180deg) scale(1.1); }
+      55% { transform: translate3d(70px, 50px, 0px) rotateX(-540deg) rotateY(-360deg) scale(1.0); } /* Bounce 1 */
+      70% { transform: translate3d(80px, 30px, 20px) rotateX(-680deg) rotateY(-450deg) scale(1.0); }
+      85% { transform: translate3d(88px, 45px, 0px) rotateX(-760deg) rotateY(-520deg) scale(1.0); } /* Bounce 2 */
+      100% { transform: translate3d(92px, 40px, 0px) rotateX(var(--target-rx)) rotateY(var(--target-ry)) scale(1.0); }
+    }
+
+    .animate-throw-1 { animation: throw-coin-1 1.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+    .animate-throw-2 { animation: throw-coin-2 1.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+    .animate-throw-3 { animation: throw-coin-3 1.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+  </style>
+</head>
+<body class="text-neutral-100 min-h-screen antialiased">
+  
+  <div id="root"></div>
+
+  <!-- React code with Babel -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // 系統自動注入的 API 金鑰
+    const apiKey = ""; 
+
+    // 安全 LocalStorage 封裝以防止沙盒 iframe 權限限制拋出 SecurityError
+    const safeLocalStorage = {
+      getItem: (key) => {
+        try {
+          return localStorage.getItem(key);
+        } catch (e) {
+          console.warn("LocalStorage getItem 被瀏覽器或沙盒限制:", e);
+          return null;
+        }
+      },
+      setItem: (key, value) => {
+        try {
+          localStorage.setItem(key, value);
+        } catch (e) {
+          console.warn("LocalStorage setItem 被瀏覽器或沙盒限制:", e);
+        }
+      }
+    };
+
+    // 易經六十四卦卦名查找表
+    const SIXTY_FOUR_GUA = {
+      "乾乾": "乾", "乾兌": "履", "乾離": "同人", "乾震": "無妄", "乾巽": "姤", "乾坎": "訟", "乾艮": "遁", "乾坤": "否",
+      "兌乾": "夬", "兌兌": "兌", "兌離": "革", "兌震": "隨", "兌巽": "大過", "兌坎": "困", "兌艮": "咸", "兌坤": "萃",
+      "離乾": "大有", "離兌": "睽", "離離": "離", "離震": "噬嗑", "離巽": "鼎", "離坎": "未濟", "離艮": "旅", "離坤": "晉",
+      "震乾": "大壯", "震兌": "歸妹", "震離": "豐", "震震": "震", "震巽": "恆", "震坎": "解", "震艮": "小過", "震坤": "豫",
+      "巽乾": "小畜", "巽兌": "中孚", "巽離": "家人", "巽震": "益", "巽巽": "巽", "巽坎": "渙", "巽艮": "漸", "巽坤": "升",
+      "坎乾": "需", "坎兌": "節", "坎離": "既濟", "坎震": "屯", "坎巽": "井", "坎坎": "坎", "坎艮": "蹇", "坎坤": "比",
+      "艮乾": "大畜", "艮兌": "損", "艮離": "賁", "艮震": "頤", "艮巽": "蠱", "艮坎": "蒙", "艮艮": "艮", "艮坤": "剝",
+      "坤乾": "泰", "坤兌": "臨", "坤離": "明夷", "坤震": "復", "坤巽": "升", "坤坎": "師", "坤艮": "謙", "坤坤": "坤"
+    };
+
+    // 八卦基礎屬性定義
+    const BAGUA = [
+      { name: '乾', nature: '天', element: '金', number: 1, symbol: '☰' },
+      { name: '兌', nature: '澤', element: '金', number: 2, symbol: '☱' },
+      { name: '離', nature: '火', element: '火', number: 3, symbol: '☲' },
+      { name: '震', nature: '雷', element: '木', number: 4, symbol: '☳' },
+      { name: '巽', nature: '風', element: '木', number: 5, symbol: '☴' },
+      { name: '坎', nature: '水', element: '水', number: 6, symbol: '☵' },
+      { name: '艮', nature: '山', element: '土', number: 7, symbol: '☶' },
+      { name: '坤', nature: '地', element: '土', number: 8, symbol: '☷' }
+    ];
+
+    const BRANCHES = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+
+    // 卦辭庫 (用於離線基礎解卦)
+    const GUA_DESCRIPTIONS = {
+      "乾": "元亨利貞。天行健，君子以自強不息。代表純陽剛健，充滿動力與開創精神，但應防物極必反。",
+      "坤": "元亨，利牝馬之貞。地勢坤，君子以厚德載物。代表包容、柔順、被動，宜靜守，不宜主動出擊。",
+      "屯": "元亨利貞，勿用有攸往，利建侯。雲雷屯，君子以經綸。代表萬物始生，創業維艱，處於累積實力階段。",
+      "蒙": "亨。匪我求童蒙，童蒙求我。山下出泉，蒙。代表啟蒙、迷茫、探索，需要導師指引或耐心學習。",
+      "需": "有孚，光亨，貞吉，利涉大川。雲上於天，需。代表等待、蓄勢待發，時機未到，宜耐心安守。",
+      "訟": "有孚，窒惕，中吉，終凶。天與水違行，訟。代表爭執、訴訟、不和，宜退讓妥協，忌意氣之爭。",
+      "師": "貞，丈人吉，無咎。地中有水，師。代表集體行動、組織、領導力，宜遵守紀律，團結一致。",
+      "比": "吉。原筮，元永貞，無咎。地上有水，比。代表團結、依附、親近，互利共贏之吉象。",
+      "小畜": "亨。密雲不雨，自我西郊。風行天上，小畜。代表力量微薄，蓄積不足，宜自我克制、等待契機。",
+      "履": "履虎尾，不咥人，亨。上天下澤，履。代表如履薄冰、小心行事、以柔克剛，防微杜漸則能轉危為安。",
+      "泰": "小往大來，吉亨。天地交，泰。代表三陽開泰、通達、安泰和諧，互通互融之吉兆。",
+      "否": "否之匪人，不利君子貞，大往小來。天地不交，否。代表閉塞、阻礙不通、人際疏離，宜退隱守成。",
+      "同人": "同人于野，亨。利涉大川，利君子貞。天與火，同人。代表志同道合、團隊合作、無私大同。",
+      "大有": "元亨。火在天上，大有。代表大有收穫、富足昌盛，但需居安思危，謙遜守道。",
+      "謙": "亨，君子有終。地中有山，謙。代表謙遜、退讓、大吉。唯有保持謙虛才能獲得長遠福報。",
+      "豫": "利建侯行師。雷出地奮，豫。代表喜悅、安樂、預備、順應天時，利於策劃或動員。",
+      "隨": "元亨利貞，無咎。澤中有雷，隨。代表順從、隨和、隨遇而安，切忌盲目跟從失去自我。",
+      "蠱": "元亨，利涉大川。山下有風，蠱。代表整治、敗壞、革新，面臨掃除積弊、重新出發的轉機。",
+      "臨": "元亨利貞，至于八月有凶。澤上有地，臨。代表居高臨下、督導督促、進步，但防物極必反之衰退。",
+      "觀": "盥而不薦，有孚顒若。風行地上，觀。代表觀察、審視、展示，宜靜觀其變，以身作則。",
+      "噬嗑": "亨。利用獄。雷電，噬嗑。代表咬碎阻礙、執法公正、解決矛盾，利於突破瓶頸。",
+      "賁": "亨。小利有攸往。山下有火，賁。代表裝飾、美化、表面功夫，防華而不實，宜注重內在涵養。",
+      "剝": "不利有攸往。山附於地，剝。代表剝落、衰退、小人得勢，宜隱忍退守以避禍害。",
+      "復": "亨。出入無疾，朋來無咎。雷在地中，復。代表復甦、生機再現、重頭開始，希望正漸漸浮現。",
+      "無妄": "元亨利貞。其匪正有眚，不利有攸往。天下雷行，無妄。代表真實、不虛妄、順其自然，忌心存僥倖。",
+      "大畜": "利貞，不家食吉，利涉大川。天在山中，大畜。代表大有積蓄、儲備人才與實力，利於大有作為。",
+      "頤": "貞吉。觀頤，自求口實。山下有雷，頤。代表頤養、保養、飲食起居，注意言語得體與身體健康。",
+      "大過": "棟橈，利有攸往，亨。澤滅木，大過。代表負擔過重、面臨嚴峻挑戰，需有果斷的魄力突破難關。",
+      "坎": "習坎，有孚，維心亨，行有尚。水洊至，習坎。代表重重險難、陷阱與考驗，需誠信堅守，歷練心志。",
+      "離": "利貞，亨。畜牝牛，吉。明兩作，離。代表光明、依附、美麗，宜保持中正，依附正道前行。",
+      "咸": "亨，利貞，取女吉。山上有澤，咸。代表相互感應、情感交流、默契，利於婚嫁與深度合作。",
+      "恆": "亨，無咎，利貞，利有攸往。雷風，恆。代表恆久、堅持不懈、守常，以穩定持久的態度行事。",
+      "遁": "亨，小利貞。天下有山，遁。代表退避、隱遁、惹不起躲得起，以退為進方為上策。",
+      "大壯": "利貞。雷在天上，大壯。代表聲勢浩大、強盛，但防過於剛強而折損，宜守正不越軌。",
+      "晉": "康侯用錫馬蕃庶，晝日三接。明出地上，晉。代表前進、晉升、光明照耀，事業與名望步步高升。",
+      "明夷": "利艱貞。明入地中，明夷。代表光明受損、艱難困苦，宜外柔內剛，暗中積蓄力量。",
+      "家人": "利女貞。風自火出，家人。代表治家之道、內助與和睦，宜各守本分，修身齊家。",
+      "睽": "小事吉。上火下澤，睽。代表背道而馳、乖異矛盾，大勢不和，此時宜存異求同。",
+      "蹇": "利西南，不利東北。利見大人，貞吉。山上有水，蹇。代表寸步難行、前路凶險，宜止步避險，尋求幫助。",
+      "解": "利西南。無所往，其來復吉。雷雨作，解。代表解除危難、寬容釋放，雨過天晴，煩惱煙消雲散。",
+      "損": "有孚，元吉，無咎，可貞。山下有澤，損。代表減損、付出、奉獻，吃虧是福，懂得捨棄才能獲得。",
+      "益": "利有攸往，利涉大川。風雷，益。代表增益、收穫、進步，利於積極開拓，多行善事以招福報。",
+      "夬": "揚于王庭，孚號，有厲。澤上於天，夬。代表決斷、清除阻礙、果斷前行，但需防止小人反撲。",
+      "姤": "女壯，勿用取女。天下有風，姤。代表意外相遇、偶遇、潛在危機，防微杜漸，謹防誘惑。",
+      "萃": "亨。王假有廟，利見大人，亨，利貞。澤上於地，萃。代表聚集、人才匯聚、團結，利於聚財合作。",
+      "升": "元亨，用見大人，勿憂。南征吉。地中生木，升。代表上升、進步、穩步發展，前途光明。",
+      "困": "亨，貞，大人吉，無咎。澤無水，困。代表窮困、英雄無用武之地，此時宜堅定信念，默默修行。",
+      "井": "改邑不改井，無喪無得。木上有水，井。代表源源不斷、付出與奉獻，修己惠人，維持恆常運作。",
+      "革": "己日乃孚，元亨利貞，悔亡。澤中有火，革。代表變革、改革、順天應人，除舊迎新，迎來全新篇章。",
+      "鼎": "元吉，亨。木上有火，鼎。代表鼎新、權威、尊貴，象徵合作取得巨大成功，利建功立業。",
+      "震": "亨。震來虩虩，笑言啞啞。洊雷，震。代表震動、警醒、雷聲隆隆，雖有虛驚但無險，宜反省修己。",
+      "艮": "艮其背，不獲其身，行其庭，不見其人，無咎。兼山，艮。代表止步、靜止、適可而止，知止不殆。",
+      "漸": "女歸吉，利貞。山上有木，漸。代表循序漸進、穩步前行，順理成章之吉兆，切忌急功近利。",
+      "歸妹": "征凶，無攸利。澤上有雷，歸妹。代表倒錯、關係不正、衝動行事，多有阻難，宜冷靜審視。",
+      "豐": "亨，王假之，勿憂，宜日中。雷電皆至，豐。代表豐盛盛大、如日中天，但需防盛極而衰的轉折。",
+      "旅": "小亨，旅貞吉。山上有火，旅。代表羈旅、客居、流動、漂泊，宜守分安命，防止糾紛。",
+      "巽": "小亨，利有攸往，利見大人。隨風，巽。代表順從、謙遜、無孔不入，宜順應大勢，發揮柔韌特長。",
+      "兌": "亨，利貞。麗澤，兌。代表喜悅、和樂、言語交流，也防口舌是非與表面討好，保持真誠。",
+      "渙": "亨。王假有廟，利涉大川，利貞。風行水上，渙。代表渙散、化解危機、凝聚人心，宜出遠門或推動大項目。",
+      "節": "亨。苦節不可貞。澤上有水，節。代表節制、規矩、適度。注意自我約束，但切勿過度苛刻。",
+      "中孚": "豚魚吉，利涉大川，利貞。澤上有風，中孚。代表誠信、內心誠實、感化萬物，可承擔大任，極吉。",
+      "小過": "亨，利貞。可小事，不可大事。山上有雷，小過。代表小有偏差、過度，此時宜保守、下守，不宜高調。",
+      "既濟": "亨，小利貞。初吉終亂。水在火上，既濟。代表大功告成、美滿和諧，但需提防未雨綢繆，防盛極轉衰。",
+    };
+
+    // 金錢卦 3D 占卜沙盒組件
+    const CoinDivinationSandbox = ({
+      tossStep,
+      coinTossHistory,
+      isCoinShaking,
+      isCoinTossing,
+      currentTossCoins,
+      coinTargetRotations,
+      startShakingCoins,
+      throwCoins,
+      handleReset
+    }) => {
+      // 獲取當前投擲的結果描述
+      const getCurrentResultText = () => {
+        if (coinTossHistory.length === 0) return "請點擊龜殼或下方按鈕開始第一投";
+        const lastToss = coinTossHistory[coinTossHistory.length - 1];
+        const heads = lastToss.coins.filter(c => c === 0).length;
+        const tails = 3 - heads;
+        return `第 ${lastToss.step} 投結果：${heads}字 ${tails}幕 ➔ ${lastToss.symbol} (${lastToss.lineType === 1 ? '陽爻' : '陰爻'})`;
+      };
+
+      return (
+        <div className="w-full flex flex-col items-center select-none">
+          {/* 進度指示點 */}
+          <div className="flex gap-2.5 mb-4 justify-center">
+            {[1, 2, 3, 4, 5, 6].map((step) => {
+              let dotClass = "w-3 h-3 rounded-full transition-all duration-300 ";
+              if (step <= tossStep) {
+                // 已完成的爻：金色
+                dotClass += "bg-gold-500 shadow-[0_0_8px_rgba(212,175,55,0.7)]";
+              } else if (step === tossStep + 1 && !isCoinTossing && !isCoinShaking) {
+                // 當前爻：綠色閃爍
+                dotClass += "bg-jade-400 animate-pulse scale-110 border border-white/40";
+              } else {
+                // 未完成的爻：暗灰色
+                dotClass += "bg-neutral-800 border border-white/5";
+              }
+              return (
+                <div key={step} className="relative group">
+                  <div className={dotClass} />
+                  <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[8px] text-neutral-500 scale-90 whitespace-nowrap">
+                    {['初', '二', '三', '四', '五', '上'][step - 1]}爻
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 3D 沙盒主體 */}
+          <div className="w-full h-56 rounded-2xl relative overflow-hidden flex flex-col items-center justify-center border border-[#d4af37]/20 shadow-[inset_0_4px_20px_rgba(0,0,0,0.8),0_10px_30px_rgba(0,0,0,0.6)]"
+               style={{
+                 background: 'radial-gradient(circle at center, #23160e 0%, #110905 100%)',
+               }}>
+            
+            {/* 木紋微裝飾 */}
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
+              backgroundImage: 'repeating-linear-gradient(90deg, #d4af37, #d4af37 2px, transparent 2px, transparent 12px)',
+              backgroundSize: '24px 100%'
+            }}></div>
+
+            {/* 3D 空間 */}
+            <div className="relative w-full h-full flex items-center justify-center perspective-sandbox">
+              
+              {/* 龜殼 */}
+              {tossStep < 6 && (
+                <div 
+                  onClick={() => {
+                    if (isCoinShaking) {
+                      throwCoins();
+                    } else if (!isCoinTossing) {
+                      startShakingCoins();
+                    }
+                  }}
+                  className={`absolute z-20 transition-all duration-300 ${
+                    isCoinShaking ? 'animate-shake-shell cursor-pointer scale-105' : 
+                    isCoinTossing ? 'translate-y-[-20px] rotateX(25deg) scale-95 opacity-80 pointer-events-none' : 
+                    'cursor-pointer hover:scale-105 hover:translate-y-[-2px] active:scale-95'
+                  }`}
+                  style={{
+                    transformOrigin: 'center bottom',
+                    transform: isCoinTossing ? 'translate3d(0, -35px, 80px) rotateX(40deg)' : 'none'
+                  }}
+                  title={isCoinShaking ? "點擊擲出銅錢" : "點擊搖晃龜殼"}
+                >
+                  {/* 龜甲陰影 */}
+                  <div className="absolute bottom-[-8px] left-1/2 -translate-x-1/2 w-24 h-4 bg-black/60 blur-md rounded-full pointer-events-none"></div>
+                  
+                  {/* 龜甲 SVG */}
+                  <svg viewBox="0 0 200 160" className="w-36 h-28 select-none filter drop-shadow-[0_8px_16px_rgba(0,0,0,0.7)]">
+                    <defs>
+                      <radialGradient id="shellGradSandbox" cx="50%" cy="40%" r="50%" fx="40%" fy="30%">
+                        <stop offset="0%" stopColor="#966f59" />
+                        <stop offset="45%" stopColor="#5c3f30" />
+                        <stop offset="80%" stopColor="#3b251a" />
+                        <stop offset="100%" stopColor="#1a0e08" />
+                      </radialGradient>
+                      <linearGradient id="goldHighlightSandbox" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#fdf08a" stopOpacity="0.35" />
+                        <stop offset="60%" stopColor="#d4af37" stopOpacity="0.05" />
+                        <stop offset="100%" stopColor="#614418" stopOpacity="0.5" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M 100,10 C 150,10 190,40 190,90 C 190,130 150,150 100,150 C 50,150 10,130 10,90 C 10,40 50,10 100,10 Z" fill="url(#shellGradSandbox)" stroke="#d4af37" strokeWidth="1.2" strokeOpacity="0.35" />
+                    
+                    {/* 龜殼紋路 */}
+                    <path d="M 100,15 C 145,15 180,42 180,85 C 180,122 145,140 100,140 C 55,140 20,122 20,85 C 20,42 55,15 100,15 Z" fill="none" stroke="#1f110a" strokeWidth="1.5" />
+                    <polygon points="100,30 120,45 120,65 100,75 80,65 80,45" fill="none" stroke="#d4af37" strokeWidth="0.8" strokeOpacity="0.25" />
+                    <polygon points="100,75 120,90 120,110 100,120 80,110 80,90" fill="none" stroke="#d4af37" strokeWidth="0.8" strokeOpacity="0.25" />
+                    <polygon points="120,45 155,40 165,65 145,80 120,65" fill="none" stroke="#d4af37" strokeWidth="0.8" strokeOpacity="0.18" />
+                    <polygon points="80,45 45,40 35,65 55,80 80,65" fill="none" stroke="#d4af37" strokeWidth="0.8" strokeOpacity="0.18" />
+                    <polygon points="120,90 160,85 170,110 145,125 120,110" fill="none" stroke="#d4af37" strokeWidth="0.8" strokeOpacity="0.18" />
+                    <polygon points="80,90 40,85 30,110 55,125 80,110" fill="none" stroke="#d4af37" strokeWidth="0.8" strokeOpacity="0.18" />
+                    
+                    <line x1="100" y1="10" x2="100" y2="15" stroke="#d4af37" strokeWidth="0.8" strokeOpacity="0.3" />
+                    <line x1="100" y1="140" x2="100" y2="150" stroke="#d4af37" strokeWidth="0.8" strokeOpacity="0.3" />
+                    <line x1="10" y1="90" x2="20" y2="85" stroke="#d4af37" strokeWidth="0.8" strokeOpacity="0.3" />
+                    <line x1="190" y1="90" x2="180" y2="85" stroke="#d4af37" strokeWidth="0.8" strokeOpacity="0.3" />
+
+                    <path d="M 100,10 C 150,10 190,40 190,90 C 190,130 150,150 100,150 C 50,150 10,130 10,90 C 10,40 50,10 100,10 Z" fill="url(#goldHighlightSandbox)" pointerEvents="none" />
+                  </svg>
+                </div>
+              )}
+
+              {/* 3D 銅錢 */}
+              {!isCoinShaking && (isCoinTossing || coinTossHistory.length > 0) && (
+                <div className="absolute w-full h-full top-0 left-0 pointer-events-none flex items-center justify-center">
+                  {[0, 1, 2].map((idx) => {
+                    const coinValue = currentTossCoins[idx];
+                    const rot = coinTargetRotations[idx] || { rx: '0deg', ry: '0deg' };
+                    let animationClass = "";
+                    if (isCoinTossing) {
+                      animationClass = idx === 0 ? "animate-throw-1" : idx === 1 ? "animate-throw-2" : "animate-throw-3";
+                    }
+                    
+                    return (
+                      <div 
+                        key={idx} 
+                        className={`coin-container-3d ${animationClass}`}
+                        style={{
+                          left: 'calc(50% - 23px)',
+                          top: 'calc(40% - 23px)',
+                          '--target-rx': rot.rx,
+                          '--target-ry': rot.ry,
+                          transform: !isCoinTossing ? `translate3d(${idx === 0 ? -92 : idx === 1 ? 15 : 92}px, 40px, 0px) rotateX(${rot.rx}) rotateY(${rot.ry})` : undefined
+                        }}
+                      >
+                        <div className="coin-3d">
+                          {/* 正面/字 */}
+                          <div className="coin-face coin-front">
+                            <svg viewBox="0 0 100 100" className="w-full h-full">
+                              <defs>
+                                <radialGradient id={`goldGradFront-${idx}`} cx="50%" cy="50%" r="50%">
+                                  <stop offset="0%" stopColor="#fff2a3" />
+                                  <stop offset="70%" stopColor="#d4af37" />
+                                  <stop offset="100%" stopColor="#aa8010" />
+                                </radialGradient>
+                              </defs>
+                              <circle cx="50" cy="50" r="47" fill={`url(#goldGradFront-${idx})`} stroke="#8f6b00" strokeWidth="1.2" />
+                              <circle cx="50" cy="50" r="41" fill="none" stroke="#e8c85c" strokeWidth="0.8" strokeOpacity="0.5" />
+                              <rect x="39" y="39" width="22" height="22" rx="1.5" fill="#1c180b" stroke="#8f6b00" strokeWidth="1.2" />
+                              <text x="50" y="31" textAnchor="middle" fill="#523a04" fontSize="12" fontWeight="bold" fontFamily="Noto Serif TC">乾</text>
+                              <text x="50" y="79" textAnchor="middle" fill="#523a04" fontSize="12" fontWeight="bold" fontFamily="Noto Serif TC">坤</text>
+                              <text x="28" y="55" textAnchor="middle" fill="#523a04" fontSize="12" fontWeight="bold" fontFamily="Noto Serif TC">通</text>
+                              <text x="72" y="55" textAnchor="middle" fill="#523a04" fontSize="12" fontWeight="bold" fontFamily="Noto Serif TC">寶</text>
+                            </svg>
+                          </div>
+                          {/* 反面/幕 */}
+                          <div className="coin-face coin-back">
+                            <svg viewBox="0 0 100 100" className="w-full h-full">
+                              <defs>
+                                <radialGradient id={`goldGradBack-${idx}`} cx="50%" cy="50%" r="50%">
+                                  <stop offset="0%" stopColor="#ffd875" />
+                                  <stop offset="70%" stopColor="#bfa02c" />
+                                  <stop offset="100%" stopColor="#8a6700" />
+                                </radialGradient>
+                              </defs>
+                              <circle cx="50" cy="50" r="47" fill={`url(#goldGradBack-${idx})`} stroke="#7c5d00" strokeWidth="1.2" />
+                              <circle cx="50" cy="50" r="41" fill="none" stroke="#dec054" strokeWidth="0.8" strokeOpacity="0.4" />
+                              <rect x="39" y="39" width="22" height="22" rx="1.5" fill="#1c180b" stroke="#7c5d00" strokeWidth="1.2" />
+                              {/* 乾 ☰ */}
+                              <path d="M 43 23 L 57 23 M 43 26 L 57 26 M 43 29 L 57 29" stroke="#523a04" strokeWidth="1.2" strokeLinecap="round" />
+                              {/* 坤 ☷ */}
+                              <path d="M 43 71 L 48 71 M 52 71 L 57 71 M 43 74 L 48 74 M 52 74 L 57 74 M 43 77 L 48 77 M 52 77 L 57 77" stroke="#523a04" strokeWidth="1.2" strokeLinecap="round" />
+                              {/* 離 ☲ */}
+                              <path d="M 21 44 L 28 44 M 21 47 L 23 47 M 25 47 L 28 47 M 21 50 L 28 50" stroke="#523a04" strokeWidth="1.2" strokeLinecap="round" />
+                              {/* 坎 ☵ */}
+                              <path d="M 72 44 L 74 44 M 76 44 L 79 44 M 72 47 L 79 47 M 72 50 L 74 50 M 76 50 L 79 50" stroke="#523a04" strokeWidth="1.2" strokeLinecap="round" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              
+              {/* 起卦完畢標識 */}
+              {tossStep === 6 && (
+                <div className="absolute z-20 flex flex-col items-center justify-center p-4 rounded-xl bg-black/60 border border-gold-500/20 backdrop-blur-sm animate-in fade-in zoom-in duration-300">
+                  <span className="text-xl text-gold-400 mb-1">☯</span>
+                  <span className="text-xs font-bold text-gold-300 font-serif tracking-widest">六爻起卦完成</span>
+                  <span className="text-[10px] text-neutral-400 mt-1">正在推演卦象，分析天機...</span>
+                </div>
+              )}
+
+            </div>
+          </div>
+
+          {/* 文字回饋面版 */}
+          <div className="w-full mt-4 text-center">
+            <div className="text-xs text-neutral-300 font-serif min-h-[1.5rem] tracking-wide">
+              {isCoinShaking ? (
+                <span className="text-gold-400 animate-pulse">
+                  龜殼劇烈晃動中，銅錢叮噹作響...
+                </span>
+              ) : isCoinTossing ? (
+                <span className="text-jade-400">
+                  銅錢從龜殼口部灑落，在案几上翻滾彈跳...
+                </span>
+              ) : (
+                getCurrentResultText()
+              )}
+            </div>
+            
+            {/* 動態按鈕控制 */}
+            <div className="flex gap-3 justify-center mt-3">
+              {tossStep < 6 ? (
+                <>
+                  {!isCoinShaking && !isCoinTossing ? (
+                    <button
+                      onClick={startShakingCoins}
+                      className="px-6 py-2 bg-gradient-to-r from-gold-600 to-gold-400 text-black text-xs font-bold rounded-full font-serif shadow-lg active:scale-95 transition-all flex items-center gap-1.5"
+                    >
+                      <span className="text-sm">🐢</span> 搖晃龜殼
+                    </button>
+                  ) : isCoinShaking && !isCoinTossing ? (
+                    <button
+                      onClick={throwCoins}
+                      className="px-6 py-2 bg-gradient-to-r from-amber-500 to-yellow-400 text-black text-xs font-bold rounded-full font-serif shadow-lg active:scale-95 transition-all flex items-center gap-1.5 animate-pulse"
+                    >
+                      <span className="text-sm">🪙</span> 擲出銅錢
+                    </button>
+                  ) : (
+                    <button
+                      disabled
+                      className="px-6 py-2 bg-neutral-800 text-neutral-500 text-xs font-bold rounded-full font-serif cursor-not-allowed flex items-center gap-1.5"
+                    >
+                      <svg className="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.5" /></svg>
+                      銅錢翻滾中
+                    </button>
+                  )}
+                </>
+              ) : (
+                <button
+                  onClick={handleReset}
+                  className="px-6 py-2 bg-white/5 border border-white/10 text-neutral-300 hover:text-gold-300 text-xs font-bold rounded-full font-serif active:scale-95 transition-all flex items-center gap-1.5"
+                >
+                  <span className="text-sm">🔄</span> 重起新卦
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // 核心 React 應用組件
+    const PlumBlossomApp = () => {
+      // 狀態設定
+      const [mode, setMode] = useState('time'); // 'time', 'number', 'char', 'random', 'coin'
+      const [question, setQuestion] = useState('');
+      const [nums, setNums] = useState({ n1: '', n2: '', n3: '' });
+      const [charText, setCharText] = useState('');
+      
+      // 時間起卦的預設日期時間
+      const [dateTime, setDateTime] = useState(() => {
+        const now = new Date();
+        const tzoffset = now.getTimezoneOffset() * 60000;
+        return (new Date(now - tzoffset)).toISOString().slice(0, 16);
+      });
+      
+      const [result, setResult] = useState(null);
+      const [isAnimating, setIsAnimating] = useState(false);
+      const [tickerGua, setTickerGua] = useState({ s: '☰', x: '☷' });
+      const [aiAnalysis, setAiAnalysis] = useState(null);
+      const [copied, setCopied] = useState(false);
+      const [showInfo, setShowInfo] = useState(false);
+      const [infoTab, setInfoTab] = useState('general'); // 'general', 'time', 'number', 'char', 'random', 'coin'
+      const [showSettings, setShowSettings] = useState(false);
+      const [selectedHistory, setSelectedHistory] = useState(null);
+
+      // 金錢卦專屬狀態
+      const [tossStep, setTossStep] = useState(0); // 0: 尚未開始, 1-6: 當前第幾爻
+      const [coinTossHistory, setCoinTossHistory] = useState([]); // 每次投擲硬幣的結果陣列
+      const [isCoinShaking, setIsCoinShaking] = useState(false); // 龜殼搖動中
+      const [isCoinTossing, setIsCoinTossing] = useState(false); // 硬幣拋擲中
+      const [currentTossCoins, setCurrentTossCoins] = useState([0, 0, 0]); // 當前三枚硬幣 (0:字/正面, 1:幕/反面)
+      const [coinTargetRotations, setCoinTargetRotations] = useState([
+        { rx: '720deg', ry: '720deg' },
+        { rx: '720deg', ry: '720deg' },
+        { rx: '720deg', ry: '720deg' }
+      ]); // 三枚硬幣落定時的旋轉角設定
+      
+      // API 金鑰與模型設定
+      const [customApiKey, setCustomApiKey] = useState(() => safeLocalStorage.getItem('gemini_api_key') || '');
+      const [selectedModel, setSelectedModel] = useState(() => {
+        const stored = safeLocalStorage.getItem('gemini_model');
+        if (stored === 'gemini-1.5-flash') return 'gemini-2.0-flash';
+        if (stored === 'gemini-1.5-pro') return 'gemini-2.5-pro';
+        if (stored === 'gemini-flash-latest') return 'gemini-2.0-flash';
+        if (stored === 'gemini-pro-latest') return 'gemini-2.5-pro';
+        return stored || 'gemini-2.0-flash';
+      });
+      const [history, setHistory] = useState(() => {
+        try {
+          return JSON.parse(safeLocalStorage.getItem('divination_history')) || [];
+        } catch {
+          return [];
+        }
+      });
+      
+      // 音效與動畫計時器
+      const audioContextRef = useRef(null);
+      const soundIntervalRef = useRef(null);
+
+      // 動畫跑馬燈與結果同步
+      useEffect(() => {
+        let ticker;
+        if (isAnimating) {
+          ticker = setInterval(() => {
+            setTickerGua({
+              s: BAGUA[Math.floor(Math.random() * 8)].symbol,
+              x: BAGUA[Math.floor(Math.random() * 8)].symbol
+            });
+          }, 80);
+        } else if (result) {
+          setTickerGua({
+            s: result.shangGua.symbol,
+            x: result.xiaGua.symbol
+          });
+        }
+        return () => clearInterval(ticker);
+      }, [isAnimating, result]);
+
+      // 儲存歷史紀錄至 localStorage
+      useEffect(() => {
+        safeLocalStorage.setItem('divination_history', JSON.stringify(history));
+      }, [history]);
+
+      // 儲存金鑰與模型設定
+      const saveSettings = (key, model) => {
+        setCustomApiKey(key);
+        setSelectedModel(model);
+        safeLocalStorage.setItem('gemini_api_key', key);
+        safeLocalStorage.setItem('gemini_model', model);
+        setShowSettings(false);
+      };
+
+      // 音效播放
+      const playDivinationSound = () => {
+        try {
+          if (!audioContextRef.current) {
+            audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          const ctx = audioContextRef.current;
+          if (ctx.state === 'suspended') ctx.resume();
+
+          soundIntervalRef.current = setInterval(() => {
+            const now = ctx.currentTime;
+            
+            // 木質龜殼搖晃聲 (Wood impact)
+            const woodOsc = ctx.createOscillator();
+            const woodGain = ctx.createGain();
+            woodOsc.type = 'sine';
+            woodOsc.frequency.setValueAtTime(140 + Math.random() * 60, now);
+            woodGain.gain.setValueAtTime(0.08, now);
+            woodGain.gain.exponentialRampToValueAtTime(0.005, now + 0.12);
+            woodOsc.connect(woodGain); 
+            woodGain.connect(ctx.destination);
+            woodOsc.start(now); 
+            woodOsc.stop(now + 0.12);
+
+            // 銅錢金屬撞擊聲 (Metal clink)
+            const coinOsc = ctx.createOscillator();
+            const coinGain = ctx.createGain();
+            coinOsc.type = 'triangle';
+            coinOsc.frequency.setValueAtTime(800 + Math.random() * 1200, now);
+            coinGain.gain.setValueAtTime(0.03, now);
+            coinGain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+            coinOsc.connect(coinGain); 
+            coinGain.connect(ctx.destination);
+            coinOsc.start(now); 
+            coinOsc.stop(now + 0.06);
+          }, 100);
+        } catch (e) { 
+          console.error("Audio Web API initialization error", e); 
+        }
+      };
+
+      const stopDivinationSound = () => {
+        if (soundIntervalRef.current) {
+          clearInterval(soundIntervalRef.current);
+          soundIntervalRef.current = null;
+        }
+      };
+
+      // 農曆與地支換算核心函數 (使用 Intl API)
+      const getLunarDetails = (dateObj) => {
+        // 中文數字解析輔助函數
+        const parseChineseMonth = (str) => {
+          if (!str) return 1;
+          const digits = str.replace(/[^\d]/g, '');
+          if (digits) return parseInt(digits);
+          
+          const cnMonths = {
+            '正': 1, '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, 
+            '七': 7, '八': 8, '九': 9, '十': 10, '十一': 11, '十二': 12, '腊': 12, '冬': 11
+          };
+          
+          for (const key in cnMonths) {
+            if (str.includes(key)) {
+              if (key === '十') {
+                if (str.includes('十一')) return 11;
+                if (str.includes('十二')) return 12;
+              }
+              return cnMonths[key];
+            }
+          }
+          return 1;
+        };
+
+        const parseChineseDay = (str) => {
+          if (!str) return 1;
+          const digits = str.replace(/[^\d]/g, '');
+          if (digits) return parseInt(digits);
+          
+          if (str.includes('初')) {
+            const char = str.replace('初', '').trim();
+            const map = { '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10 };
+            return map[char] || 1;
+          }
+          if (str.includes('廿')) {
+            const char = str.replace('廿', '').trim();
+            const map = { '一': 21, '二': 22, '三': 23, '四': 24, '五': 25, '六': 26, '七': 27, '八': 28, '九': 29, '十': 20 };
+            if (char === '') return 20;
+            return map[char] || 20;
+          }
+          if (str.includes('卅')) {
+            return 30;
+          }
+          if (str.startsWith('十')) {
+            const char = str.replace('十', '').trim();
+            const map = { '一': 11, '二': 12, '三': 13, '四': 14, '五': 15, '六': 16, '七': 17, '八': 18, '九': 19 };
+            if (char === '') return 10;
+            return map[char] || 10;
+          }
+          
+          const simpleMap = { '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10 };
+          for (const key in simpleMap) {
+            if (str.includes(key)) return simpleMap[key];
+          }
+          return 1;
+        };
+
+        try {
+          // 先嘗試以 en-US 取得純數字陰曆
+          const formatter = new Intl.DateTimeFormat('en-US-u-ca-chinese', {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric'
+          });
+          const parts = formatter.formatToParts(dateObj);
+          
+          let lunarYear = dateObj.getFullYear();
+          let month = 1;
+          let day = 1;
+          
+          for (const part of parts) {
+            if (part.type === 'year') {
+              const yearNum = parseInt(part.value.replace(/[^\d]/g, ''));
+              if (yearNum) lunarYear = yearNum;
+            } else if (part.type === 'month') {
+              const parsedMonth = parseInt(part.value.replace(/[^\d]/g, ''));
+              if (parsedMonth) month = parsedMonth;
+            } else if (part.type === 'day') {
+              const parsedDay = parseInt(part.value.replace(/[^\d]/g, ''));
+              if (parsedDay) day = parsedDay;
+            }
+          }
+          
+          // 如果 en-US 輸出並非數字（防禦性處理），改用 zh-CN 並進行中文數字解析
+          if (isNaN(month) || month === 1 && day === 1) {
+            const zhFormatter = new Intl.DateTimeFormat('zh-CN-u-ca-chinese', {
+              year: 'numeric',
+              month: 'numeric',
+              day: 'numeric'
+            });
+            const zhParts = zhFormatter.formatToParts(dateObj);
+            for (const part of zhParts) {
+              if (part.type === 'year') {
+                const yearNum = parseInt(part.value.replace(/[^\d]/g, ''));
+                if (yearNum) lunarYear = yearNum;
+              } else if (part.type === 'month') {
+                month = parseChineseMonth(part.value);
+              } else if (part.type === 'day') {
+                day = parseChineseDay(part.value);
+              }
+            }
+          }
+          
+          // 計算地支年數 (子=1, 丑=2 ... 亥=12)
+          // 2020是子年 (1), 2026是午年 (7)
+          const yearBranchIndex = (lunarYear - 3) % 12 || 12;
+          return { yearBranchIndex, month, day };
+        } catch (e) {
+          // 瀏覽器不支援時的簡單降級方案 (以西元日期簡單哈希)
+          const yearBranchIndex = (dateObj.getFullYear() - 3) % 12 || 12;
+          const month = dateObj.getMonth() + 1;
+          const day = dateObj.getDate();
+          return { yearBranchIndex, month, day };
+        }
+      };
+
+      // 取得時辰地支指數 (1-12)
+      const getHourBranchIndex = (hour) => {
+        if (hour >= 23 || hour < 1) return 1;  // 子
+        if (hour >= 1 && hour < 3) return 2;   // 丑
+        if (hour >= 3 && hour < 5) return 3;   // 寅
+        if (hour >= 5 && hour < 7) return 4;   // 卯
+        if (hour >= 7 && hour < 9) return 5;   // 辰
+        if (hour >= 9 && hour < 11) return 6;  // 巳
+        if (hour >= 11 && hour < 13) return 7; // 午
+        if (hour >= 13 && hour < 15) return 8; // 未
+        if (hour >= 15 && hour < 17) return 9; // 申
+        if (hour >= 17 && hour < 19) return 10;// 酉
+        if (hour >= 19 && hour < 21) return 11;// 戌
+        return 12;                             // 亥
+      };
+
+      // 取得對應八卦物件
+      const getBagua = (num) => {
+        let index = parseInt(num) % 8;
+        if (index === 0) index = 8;
+        return BAGUA.find(b => b.number === index);
+      };
+
+      // 取得動爻 (1-6)
+      const getMovingYao = (num) => {
+        let yao = parseInt(num) % 6;
+        if (yao === 0) yao = 6;
+        return yao;
+      };
+
+      // 取得卦名
+      const getGuaName = (shang, xia) => {
+        const key = shang.name + xia.name;
+        return SIXTY_FOUR_GUA[key] ? SIXTY_FOUR_GUA[key] : shang.name + xia.name;
+      };
+
+      // 解析五行生剋關係與分數
+      const analyzeElements = (ti, yong) => {
+        const relations = {
+          '木': { sheng: '火', ke: '土', beiSheng: '水', beiKe: '金' },
+          '火': { sheng: '土', ke: '金', beiSheng: '木', beiKe: '水' },
+          '土': { sheng: '金', ke: '水', beiSheng: '火', beiKe: '木' },
+          '金': { sheng: '水', ke: '木', beiSheng: '土', beiKe: '火' },
+          '水': { sheng: '木', ke: '火', beiSheng: '金', beiKe: '土' }
+        };
+
+        if (ti.element === yong.element) {
+          return { status: '體用比和 (吉)', desc: '體用五行屬性相同，力量均衡，代表事情平穩，順利無礙，得朋友或同輩相助。', score: 85 };
+        }
+        if (relations[yong.element].sheng === ti.element) {
+          return { status: '用生體 (大吉)', desc: '用卦（外力/事）生助體卦（自身），代表謀事易成，有貴人相助，順水推舟。', score: 95 };
+        }
+        if (relations[ti.element].sheng === yong.element) {
+          return { status: '體生用 (洩氣/小凶)', desc: '體卦去生助用卦，力量往外洩，代表自身付出多而收穫少，勞心費力，宜守不宜進。', score: 45 };
+        }
+        if (relations[yong.element].ke === ti.element) {
+          return { status: '用克體 (大凶)', desc: '用卦克制體卦，代表外在環境或事物對自身產生極大壓力、阻礙或傷害，謀事多難，宜退避。', score: 20 };
+        }
+        if (relations[ti.element].ke === yong.element) {
+          return { status: '體克用 (小吉/獲利)', desc: '體卦克制用卦，自身掌握主導權，代表事情雖然有重重困難，但經過努力最終可以克服並獲利。', score: 75 };
+        }
+        return { status: '未知', desc: '五行屬性交互影響複雜，宜審慎判斷。', score: 50 };
+      };
+
+      // 八卦線條對照表 (從初爻至三爻)
+      const getTrigramLines = (name) => {
+        switch (name) {
+          case '乾': return [1, 1, 1];
+          case '兌': return [1, 1, 0];
+          case '離': return [1, 0, 1];
+          case '震': return [1, 0, 0];
+          case '巽': return [0, 1, 1];
+          case '坎': return [0, 1, 0];
+          case '艮': return [0, 0, 1];
+          case '坤': return [0, 0, 0];
+          default: return [1, 1, 1];
+        }
+      };
+
+      // 取得六爻陣列 (初爻至上爻，共6爻)
+      const getHexagramLines = (shangName, xiaName) => {
+        return [...getTrigramLines(xiaName), ...getTrigramLines(shangName)];
+      };
+
+      // 根據6個爻的二進制陣列查找八卦
+      const getTrigramFromLines = (lines) => {
+        const key = lines.join(',');
+        if (key === '1,1,1') return BAGUA.find(b => b.name === '乾');
+        if (key === '1,1,0') return BAGUA.find(b => b.name === '兌');
+        if (key === '1,0,1') return BAGUA.find(b => b.name === '離');
+        if (key === '1,0,0') return BAGUA.find(b => b.name === '震');
+        if (key === '0,1,1') return BAGUA.find(b => b.name === '巽');
+        if (key === '0,1,0') return BAGUA.find(b => b.name === '坎');
+        if (key === '0,0,1') return BAGUA.find(b => b.name === '艮');
+        return BAGUA.find(b => b.name === '坤');
+      };
+
+      // 繁體字筆劃計算安全包裝
+      const getCharStrokeCount = (char) => {
+        if (typeof cnchar !== 'undefined') {
+          try {
+            const count = cnchar.stroke(char);
+            if (typeof count === 'number') return count;
+            if (Array.isArray(count) && count.length > 0) return count[0];
+          } catch (e) {
+            console.warn("cnchar count error for: " + char, e);
+          }
+        }
+        // 萬一載入失敗，採用簡單的 Unicode 降級雜湊
+        return (char.charCodeAt(0) % 12) + 3;
+      };
+
+      // 模擬硬幣落地音效
+      const playCoinLandingSound = () => {
+        try {
+          if (!audioContextRef.current) {
+            audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          const ctx = audioContextRef.current;
+          if (ctx.state === 'suspended') ctx.resume();
+          
+          const now = ctx.currentTime;
+          
+          // 三枚銅錢陸續落地
+          [0, 0.07, 0.14].forEach((delay) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(900 + Math.random() * 600, now + delay);
+            gain.gain.setValueAtTime(0.04, now + delay);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.12);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + delay);
+            osc.stop(now + delay + 0.12);
+          });
+        } catch (e) {
+          console.warn("播放落地音效失敗:", e);
+        }
+      };
+
+      // 開始搖動銅錢
+      const startShakingCoins = () => {
+        if (isCoinShaking || isCoinTossing || tossStep >= 6) return;
+        setIsCoinShaking(true);
+        playDivinationSound();
+      };
+
+      // 擲出銅錢並計算這一爻
+      const throwCoins = () => {
+        if (!isCoinShaking || isCoinTossing) return;
+        
+        stopDivinationSound();
+        setIsCoinShaking(false);
+        setIsCoinTossing(true);
+        
+        // 隨機生成三枚硬幣正反 (0: 字/正面, 1: 幕/反面)
+        const coins = [
+          Math.random() > 0.5 ? 0 : 1,
+          Math.random() > 0.5 ? 0 : 1,
+          Math.random() > 0.5 ? 0 : 1
+        ];
+        
+        // 計算落地時的 3D 旋轉角設定，以配合正反面
+        const targets = coins.map((c) => {
+          // c === 0 (正面/字) -> rotateY = 360*N; c === 1 (反面/幕) -> rotateY = 360*N + 180
+          const rx = (720 + (c === 1 ? 180 : 0)) + 'deg';
+          const ry = (720 + Math.floor(Math.random() * 4) * 90) + 'deg'; // 隨機旋轉角
+          return { rx, ry };
+        });
+        
+        setCoinTargetRotations(targets);
+        setCurrentTossCoins(coins);
+        
+        // 模擬在動畫進行到一半著地時播落地音效
+        setTimeout(() => {
+          playCoinLandingSound();
+        }, 550);
+        
+        // 動畫持續 1400 毫秒
+        setTimeout(async () => {
+          setIsCoinTossing(false);
+          
+          // 計算正面 (字/0) 的數量
+          const headsCount = coins.filter(c => c === 0).length;
+          let lineSymbol = '';
+          let lineType = 1; // 1: 陽爻, 0: 陰爻
+          let isMoving = false;
+          
+          if (headsCount === 3) {
+            lineSymbol = '老陽 (動)';
+            lineType = 1;
+            isMoving = true;
+          } else if (headsCount === 2) {
+            lineSymbol = '少陰';
+            lineType = 0;
+            isMoving = false;
+          } else if (headsCount === 1) {
+            lineSymbol = '少陽';
+            lineType = 1;
+            isMoving = false;
+          } else {
+            lineSymbol = '老陰 (動)';
+            lineType = 0;
+            isMoving = true;
+          }
+          
+          const newYao = {
+            step: tossStep + 1,
+            coins,
+            symbol: lineSymbol,
+            lineType,
+            isMoving
+          };
+          
+          const updatedHistory = [...coinTossHistory, newYao];
+          setCoinTossHistory(updatedHistory);
+          const nextStep = tossStep + 1;
+          setTossStep(nextStep);
+          
+          // 若滿六爻，自動進行最終排卦與解讀
+          if (nextStep === 6) {
+            await calculateCoinHexagram(updatedHistory);
+          }
+        }, 1400);
+      };
+
+      // 根據投爻結果計算卦象與體用，啟動解卦
+      const calculateCoinHexagram = async (history) => {
+        setIsAnimating(true);
+        playDivinationSound(); // 播最後計算的混音
+        setAiAnalysis(null);
+        setResult(null);
+
+        // 等待 1.5 秒以讓使用者看清第六投結果
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        // 取得 6 個爻的陰陽屬性 (初爻到上爻)
+        const mainLines = history.map(h => h.lineType);
+        
+        // 取得上下卦
+        const xiaGua = getTrigramFromLines([mainLines[0], mainLines[1], mainLines[2]]);
+        const shangGua = getTrigramFromLines([mainLines[3], mainLines[4], mainLines[5]]);
+
+        // 取得所有動爻位置 (1-indexed)
+        const movingIndices = history.map((h, idx) => h.isMoving ? idx + 1 : null).filter(Boolean);
+        
+        // 若無動爻，則預設以第六爻（上爻）為參照動爻以支援分析系統
+        let movingYao = movingIndices.length > 0 ? movingIndices[0] : 6;
+        
+        // 體卦與用卦
+        const tiGua = movingYao <= 3 ? shangGua : xiaGua;
+        const yongGua = movingYao <= 3 ? xiaGua : shangGua;
+        const basicAnalysis = analyzeElements(tiGua, yongGua);
+
+        // 互卦
+        const huXiaLines = [mainLines[1], mainLines[2], mainLines[3]];
+        const huShangLines = [mainLines[2], mainLines[3], mainLines[4]];
+        const huXiaGua = getTrigramFromLines(huXiaLines);
+        const huShangGua = getTrigramFromLines(huShangLines);
+
+        // 變卦 (將本卦中所有動爻取反；若無動爻則將我們預設的動爻取反)
+        const bianLines = [...mainLines];
+        if (movingIndices.length > 0) {
+          movingIndices.forEach(idx => {
+            bianLines[idx - 1] = bianLines[idx - 1] === 1 ? 0 : 1;
+          });
+        } else {
+          bianLines[movingYao - 1] = bianLines[movingYao - 1] === 1 ? 0 : 1;
+        }
+        
+        const bianXiaGua = getTrigramFromLines([bianLines[0], bianLines[1], bianLines[2]]);
+        const bianShangGua = getTrigramFromLines([bianLines[3], bianLines[4], bianLines[5]]);
+        
+        const bianTiGua = movingYao <= 3 ? bianShangGua : bianXiaGua;
+        const bianYongGua = movingYao <= 3 ? bianXiaGua : bianShangGua;
+        const bianAnalysis = analyzeElements(bianTiGua, bianYongGua);
+
+        const detailsText = `六爻金錢起卦：[${history.map(h => h.symbol).join(', ')}]` + 
+          (movingIndices.length === 0 ? " (靜卦，以第六爻為參照)" : "");
+
+        const divinationResult = {
+          shangGua,
+          xiaGua,
+          movingYao,
+          tiGua,
+          yongGua,
+          basicAnalysis,
+          huShangGua,
+          huXiaGua,
+          bianShangGua,
+          bianXiaGua,
+          bianTiGua,
+          bianYongGua,
+          bianAnalysis,
+          detailsText,
+          timestamp: new Date().toLocaleString()
+        };
+
+        setResult(divinationResult);
+        setIsAnimating(false);
+        stopDivinationSound();
+
+        // 呼叫 AI 進行解卦
+        await runAiInterpretation(divinationResult);
+      };
+
+      // 開始起卦與運算
+      const handleDivination = async () => {
+        let n1, n2, n3;
+        let detailsText = "";
+        
+        // 1. 根據起卦模式計算靈動數
+        if (mode === 'number') {
+          if (!nums.n1 || !nums.n2 || !nums.n3) return;
+          n1 = parseInt(nums.n1);
+          n2 = parseInt(nums.n2);
+          n3 = parseInt(nums.n3);
+          detailsText = `靈動數起卦 [${n1}, ${n2}, ${n3}]`;
+        } 
+        else if (mode === 'time') {
+          const date = new Date(dateTime);
+          const { yearBranchIndex, month, day } = getLunarDetails(date);
+          const hourBranchIndex = getHourBranchIndex(date.getHours());
+          
+          n1 = yearBranchIndex + month + day;
+          n2 = yearBranchIndex + month + day + hourBranchIndex;
+          n3 = yearBranchIndex + month + day + hourBranchIndex;
+          
+          const yBranchName = BRANCHES[yearBranchIndex - 1];
+          const hBranchName = BRANCHES[hourBranchIndex - 1];
+          detailsText = `時間起卦：${date.getFullYear()}年 (農曆${yBranchName}年) ${month}月${day}日 ${date.getHours()}時 (${hBranchName}時)`;
+        } 
+        else if (mode === 'char') {
+          const chineseChars = charText.replace(/[^\u4e00-\u9fa5]/g, '');
+          if (chineseChars.length === 0) {
+            alert("請至少輸入一個中文字！");
+            return;
+          }
+          
+          const now = new Date();
+          const hourBranchIndex = getHourBranchIndex(now.getHours());
+          const hBranchName = BRANCHES[hourBranchIndex - 1];
+          
+          if (chineseChars.length === 1) {
+            // 單字占：字筆劃為上卦，時辰為下卦
+            const stroke = getCharStrokeCount(chineseChars[0]);
+            n1 = stroke;
+            n2 = hourBranchIndex;
+            n3 = stroke + hourBranchIndex;
+            detailsText = `單字占「${chineseChars[0]}」(${stroke}劃) | 起卦時間：${hBranchName}時`;
+          } else {
+            // 多字占：字數拆平
+            const len = chineseChars.length;
+            const half1 = chineseChars.slice(0, Math.floor(len / 2));
+            const half2 = chineseChars.slice(Math.floor(len / 2));
+            
+            const stroke1 = [...half1].reduce((sum, c) => sum + getCharStrokeCount(c), 0);
+            const stroke2 = [...half2].reduce((sum, c) => sum + getCharStrokeCount(c), 0);
+            
+            n1 = stroke1;
+            n2 = stroke2;
+            n3 = stroke1 + stroke2 + hourBranchIndex;
+            detailsText = `多字占「${half1}」[${stroke1}劃] ＆ 「${half2}」[${stroke2}劃] | 時辰：${hBranchName}時`;
+          }
+        } 
+        else { // 'random' / 每日運勢
+          n1 = Math.floor(Math.random() * 64) + 1;
+          n2 = Math.floor(Math.random() * 64) + 1;
+          n3 = Math.floor(Math.random() * 64) + 1;
+          detailsText = `隨機感應起卦`;
+        }
+
+        // 2. 開始撥放搖晃與噴灑金幣動畫
+        setIsAnimating(true);
+        playDivinationSound();
+        setAiAnalysis(null);
+        setResult(null);
+
+        // 3. 延遲 1.8 秒以配合動畫完成
+        await new Promise(resolve => setTimeout(resolve, 1800));
+
+        // 4. 計算本卦、體卦、用卦
+        const shangGua = getBagua(n1);
+        const xiaGua = getBagua(n2);
+        const movingYao = getMovingYao(n3); // 1-6 爻
+
+        // 動爻在下卦 (1,2,3爻) -> 上卦為體，下卦為用。動爻在上卦 (4,5,6爻) -> 下卦為體，上卦為用。
+        const tiGua = movingYao <= 3 ? shangGua : xiaGua;
+        const yongGua = movingYao <= 3 ? xiaGua : shangGua;
+        const basicAnalysis = analyzeElements(tiGua, yongGua);
+
+        // 5. 計算互卦 (取本卦 2,3,4爻作下互卦，3,4,5爻作上互卦)
+        const mainLines = getHexagramLines(shangGua.name, xiaGua.name);
+        const huXiaLines = [mainLines[1], mainLines[2], mainLines[3]];
+        const huShangLines = [mainLines[2], mainLines[3], mainLines[4]];
+        const huXiaGua = getTrigramFromLines(huXiaLines);
+        const huShangGua = getTrigramFromLines(huShangLines);
+
+        // 6. 計算變卦 (將本卦動爻取反)
+        const bianLines = [...mainLines];
+        bianLines[movingYao - 1] = bianLines[movingYao - 1] === 1 ? 0 : 1;
+        const bianXiaGua = getTrigramFromLines([bianLines[0], bianLines[1], bianLines[2]]);
+        const bianShangGua = getTrigramFromLines([bianLines[3], bianLines[4], bianLines[5]]);
+        
+        // 變卦的體與用 (變卦中與本卦體卦同位置的為體，動爻轉變後的卦為變)
+        const bianTiGua = movingYao <= 3 ? bianShangGua : bianXiaGua;
+        const bianYongGua = movingYao <= 3 ? bianXiaGua : bianShangGua;
+        const bianAnalysis = analyzeElements(bianTiGua, bianYongGua);
+
+        const divinationResult = {
+          shangGua,
+          xiaGua,
+          movingYao,
+          tiGua,
+          yongGua,
+          basicAnalysis,
+          huShangGua,
+          huXiaGua,
+          bianShangGua,
+          bianXiaGua,
+          bianTiGua,
+          bianYongGua,
+          bianAnalysis,
+          detailsText,
+          timestamp: new Date().toLocaleString()
+        };
+
+        setResult(divinationResult);
+        setIsAnimating(false);
+        stopDivinationSound();
+
+        // 7. 開始呼叫 Gemini AI
+        await runAiInterpretation(divinationResult);
+      };
+
+      // 呼叫 Gemini 進行解卦
+      const runAiInterpretation = async (divResult) => {
+        const mainGuaName = getGuaName(divResult.shangGua, divResult.xiaGua);
+        const huGuaName = getGuaName(divResult.huShangGua, divResult.huXiaGua);
+        const bianGuaName = getGuaName(divResult.bianShangGua, divResult.bianXiaGua);
+        
+        const systemPrompt = `你是一位精通邵康節《梅花易數》與《易經》的命理大師。請根據起卦結果與用戶的問題，從事業、感情、財運、家庭、健康五個維度進行深度精確的分析，並給予具體可行的開運建議。請注意體用五行生剋關係。
+        請嚴格回覆 JSON 格式，不要包含任何額外 markdown 包裝：
+        {
+          "career": "事業與工作運勢分析...",
+          "love": "感情與人際關係分析...",
+          "wealth": "財運與投資狀況分析...",
+          "family": "家庭與日常生活狀況...",
+          "health": "身心健康防範與建議...",
+          "summary": "一句話神機批注建議"
+        }`;
+
+        const userPrompt = `
+          求占問題：${question || '一般運勢綜合占卜'}
+          起卦背景：${divResult.detailsText}
+          【本卦】：${divResult.shangGua.nature}${divResult.xiaGua.nature}．${mainGuaName}卦 (體卦為 ${divResult.tiGua.name}${divResult.tiGua.element}，用卦為 ${divResult.yongGua.name}${divResult.yongGua.element}，斷語：${divResult.basicAnalysis.status})
+          【互卦】：${divResult.huShangGua.nature}${divResult.huXiaGua.nature}．${huGuaName}卦 (代表發展過程)
+          【變卦】：${divResult.bianShangGua.nature}${divResult.bianXiaGua.nature}．${bianGuaName}卦 (動爻在 ${divResult.movingYao} 爻，代表事情結局)
+        `;
+
+        const key = customApiKey || apiKey;
+
+        // 定義離線解卦的統一處理函數
+        const setOfflineFallback = async (errMessage) => {
+          let modelDiagnostic = "";
+          if (key) {
+            try {
+              // 嘗試取得該 API Key 支援的所有模型清單以供診斷
+              const diagEndpoint = `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`;
+              const diagResponse = await fetch(diagEndpoint);
+              if (diagResponse.ok) {
+                const diagData = await diagResponse.json();
+                if (diagData.models) {
+                  const modelNames = diagData.models.map(m => m.name.replace('models/', ''));
+                  modelDiagnostic = ` \n【您的金鑰可用模型清單】：${modelNames.join(', ')}`;
+                }
+              } else {
+                const errData = await diagResponse.json().catch(() => ({}));
+                modelDiagnostic = ` \n【金鑰可用模型檢測失敗】：${errData.error?.message || diagResponse.status}`;
+              }
+            } catch (diagErr) {
+              console.warn("無法取得模型清單診斷資訊:", diagErr);
+            }
+          }
+
+          const offlineReport = {
+            career: `【本卦 - ${mainGuaName}】：${GUA_DESCRIPTIONS[mainGuaName] || '占卜成功。'}。體卦「${divResult.tiGua.name}${divResult.tiGua.element}」與用卦「${divResult.yongGua.name}${divResult.yongGua.element}」呈現 ${divResult.basicAnalysis.status}。${divResult.basicAnalysis.desc}`,
+            love: `【互卦 - ${huGuaName}】：代表事件發展的中間過程。互卦為${huGuaName}卦，五行屬性為 ${divResult.huShangGua.element}與${divResult.huXiaGua.element}。過程曲折起伏，代表感情或人際關係在此時宜靜守、理智對待。`,
+            wealth: `【變卦 - ${bianGuaName}】：代表本占卜的最終結局。變卦為${bianGuaName}卦，終卦體用互動呈 ${divResult.bianAnalysis.status}。意味著後續結局偏向 ${divResult.bianAnalysis.score >= 50 ? '吉順可成，利於獲益' : '辛勞付出，防範損耗'}。`,
+            family: `動爻位於第 ${divResult.movingYao} 爻。動爻預示著家庭與生活環境中的轉折點，宜注意和氣生財，加強人際溝通與妥協。`,
+            health: `本卦體卦為「${divResult.tiGua.name}${divResult.tiGua.element}」。${
+              divResult.tiGua.element === '木' ? '春季氣旺，需防肝火太盛，注意作息。' :
+              divResult.tiGua.element === '火' ? '夏季氣旺，需防心血管疾病與焦躁，注意調適壓力。' :
+              divResult.tiGua.element === '金' ? '秋季氣旺，注意呼吸系統、肺部及大腸保養。' :
+              divResult.tiGua.element === '水' ? '冬季氣旺，注意泌尿系統、腎臟及寒濕侵襲。' :
+              '四季末土旺，需多注意腸胃消化系統保養。'
+            }`,
+            summary: errMessage 
+              ? `【AI 連線失敗】已自動為您切換至離線易經卦辭分析。錯誤原因：${errMessage}${modelDiagnostic}`
+              : `【離線版解卦】請點擊右上角設定 ⚙ 配置您的 Gemini API Key 以啟用更強大的 AI 深度解卦！`
+          };
+          
+          setAiAnalysis(offlineReport);
+          saveToHistory(divResult, offlineReport);
+        };
+
+        // 判斷金鑰是否為空或預留的佔位符
+        const isPlaceholderKey = (k) => {
+          if (!k) return true;
+          const trimmed = k.trim();
+          return trimmed === '' || trimmed === '系統自動注入' || trimmed === 'YOUR_API_KEY' || trimmed === 'undefined' || trimmed === 'null';
+        };
+
+        if (isPlaceholderKey(key)) {
+          await setOfflineFallback(null);
+          return;
+        }
+
+        let errorLogs = [];
+        let breakAttempt = false;
+        
+        // 輪流嘗試 v1 和 v1beta 端點，以確保免費金鑰與付費金鑰皆能正確訪問
+        const apiVersions = ['v1', 'v1beta'];
+        
+        for (let attempt = 0; attempt < 2; attempt++) {
+          if (breakAttempt) break;
+          for (const apiVersion of apiVersions) {
+            try {
+              let modelForEndpoint = selectedModel;
+              if (apiVersion === 'v1') {
+                if (selectedModel === 'gemini-flash-latest') modelForEndpoint = 'gemini-2.0-flash';
+                else if (selectedModel === 'gemini-pro-latest') modelForEndpoint = 'gemini-2.5-pro';
+                else if (selectedModel === 'gemini-1.5-flash') modelForEndpoint = 'gemini-2.0-flash';
+                else if (selectedModel === 'gemini-1.5-pro') modelForEndpoint = 'gemini-2.5-pro';
+              }
+              const apiEndpoint = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelForEndpoint}:generateContent?key=${key}`;
+              
+              // AbortController 設置 30 秒超時，防止沙盒環境網路請求被阻斷時永久掛起
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 30000);
+              
+              // 根據 apiVersion 動態調整 payload 結構，保證 v1 不會報 400 格式錯誤
+              let requestBody = {};
+              if (apiVersion === 'v1beta') {
+                requestBody = {
+                  contents: [{ parts: [{ text: userPrompt }] }],
+                  systemInstruction: { parts: [{ text: systemPrompt }] },
+                  generationConfig: { 
+                    responseMimeType: "application/json",
+                    temperature: 0.7
+                  }
+                };
+              } else {
+                // v1 端點：將 systemInstruction 合併入 prompt，移除 responseMimeType，防止 400 報錯
+                const combinedPrompt = `${systemPrompt}\n\n[起卦與問題資料]：\n${userPrompt}\n\n請務必僅回覆純 JSON 字串，不要包含任何 markdown 標記（如 \`\`\`json 的格式）。`;
+                requestBody = {
+                  contents: [{ parts: [{ text: combinedPrompt }] }],
+                  generationConfig: { 
+                    temperature: 0.7
+                  }
+                };
+              }
+
+              const response = await fetch(apiEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal,
+                body: JSON.stringify(requestBody)
+              });
+              
+              clearTimeout(timeoutId);
+              
+              if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                const msg = errData.error?.message || "";
+                if (response.status === 429 || msg.toLowerCase().includes("quota") || msg.toLowerCase().includes("rate limit")) {
+                  throw new Error(`頻率超限 (429 Quota Exceeded)。請稍候 15 秒再試，或更換 API 金鑰或切換為其他解卦模型。`);
+                }
+                throw new Error(msg || `HTTP 錯誤狀態碼: ${response.status}`);
+              }
+              
+              const data = await response.json();
+              if (!data.candidates || data.candidates.length === 0) {
+                throw new Error("Gemini API 回傳資料中無候選回答 (candidates)");
+              }
+              
+              let text = data.candidates[0].content.parts[0].text;
+              // 清理 markdown 的 ```json 或 ``` 標記
+              text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+              
+              const parsed = JSON.parse(text);
+              setAiAnalysis(parsed);
+              
+              // 寫入歷史紀錄
+              saveToHistory(divResult, parsed);
+              return; // 成功，結束函數
+              
+            } catch (e) {
+              console.warn(`使用 ${apiVersion} 呼叫 ${selectedModel} 失敗:`, e);
+              errorLogs.push(`${apiVersion} 錯誤: ${e.message || e.toString()}`);
+              if (e.message.includes("429") || e.message.toLowerCase().includes("quota") || e.message.toLowerCase().includes("rate limit")) {
+                breakAttempt = true;
+                break;
+              }
+            }
+          }
+          
+          if (attempt < 1) {
+            // 第一輪失敗，等待 1 秒再進行下一輪
+            await new Promise(res => setTimeout(res, 1000));
+          }
+        }
+        
+        // 重試均失敗，降級為離線解卦並標記錯誤
+        await setOfflineFallback(errorLogs.join(" | "));
+      };
+
+      // 儲存至歷史紀錄
+      const saveToHistory = (divResult, aiParsed) => {
+        const item = {
+          id: Date.now(),
+          question: question || '一般運勢綜合占卜',
+          mode: mode,
+          shangName: divResult.shangGua.name,
+          xiaName: divResult.xiaGua.name,
+          movingYao: divResult.movingYao,
+          guaName: getGuaName(divResult.shangGua, divResult.xiaGua),
+          status: divResult.basicAnalysis.status,
+          summary: aiParsed?.summary || '占卜已完成。',
+          result: divResult,
+          aiAnalysis: aiParsed
+        };
+        setHistory(prev => [item, ...prev].slice(0, 50)); // 上限 50 條
+      };
+
+      // 復原歷史紀錄
+      const handleRestoreHistory = (item) => {
+        setResult(item.result);
+        setAiAnalysis(item.aiAnalysis);
+        setQuestion(item.question);
+        setMode(item.mode);
+        setSelectedHistory(item.id);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      // 刪除歷史紀錄
+      const handleDeleteHistory = (id, e) => {
+        e.stopPropagation();
+        setHistory(prev => prev.filter(item => item.id !== id));
+        if (selectedHistory === id) {
+          handleReset();
+        }
+      };
+
+      // 重置頁面
+      const handleReset = () => {
+        setResult(null);
+        setAiAnalysis(null);
+        setNums({ n1: '', n2: '', n3: '' });
+        setCharText('');
+        setQuestion('');
+        setCopied(false);
+        setSelectedHistory(null);
+        setTossStep(0);
+        setCoinTossHistory([]);
+        setIsCoinShaking(false);
+        setIsCoinTossing(false);
+        setCurrentTossCoins([0, 0, 0]);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      // 複製占卜報告
+      const handleCopyReport = () => {
+        if (!result) return;
+        const mainGuaName = getGuaName(result.shangGua, result.xiaGua);
+        const huGuaName = getGuaName(result.huShangGua, result.huXiaGua);
+        const bianGuaName = getGuaName(result.bianShangGua, result.bianXiaGua);
+
+        const report = `
+【梅花易數 ☯ AI 深度占卜報告】
+────────────────────
+求占時間：${result.timestamp}
+求占問題：${question || '未填寫'}
+起卦背景：${result.detailsText}
+
+【本卦】 (目前現狀)：${result.shangGua.nature}${result.xiaGua.nature}．${mainGuaName}卦
+  └─ 體卦：${result.tiGua.name}${result.tiGua.element} | 用卦：${result.yongGua.name}${result.yongGua.element}
+  └─ 生剋吉凶：${result.basicAnalysis.status}
+【互卦】 (事件過程)：${result.huShangGua.nature}${result.huXiaGua.nature}．${huGuaName}卦
+【變卦】 (最終結局)：${result.bianShangGua.nature}${result.bianXiaGua.nature}．${bianGuaName}卦 (動爻：第 ${result.movingYao} 爻)
+
+────────────────────
+【事業運勢】
+${aiAnalysis?.career || '演算中...'}
+
+【情感人際】
+${aiAnalysis?.love || '演算中...'}
+
+【財富狀況】
+${aiAnalysis?.wealth || '演算中...'}
+
+【家庭生活】
+${aiAnalysis?.family || '演算中...'}
+
+【身心健康】
+${aiAnalysis?.health || '演算中...'}
+
+【神機批注】
+「 ${aiAnalysis?.summary || '冥思天機...'} 」
+────────────────────
+下載自：梅花易數智能占卜系統
+        `.trim();
+
+        const textArea = document.createElement("textarea");
+        textArea.value = report;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+          alert("複製失敗，請手動複製！");
+        }
+        document.body.removeChild(textArea);
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col font-sans pb-16 selection:bg-gold-500/30 selection:text-white">
+          
+          {/* Header 導覽列 */}
+          <header className="sticky top-0 z-40 bg-[#080a09]/80 backdrop-blur-md border-b border-gold-500/10 px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl text-gold-500 drop-shadow-[0_0_10px_rgba(212,175,55,0.4)]">☯</span>
+              <h1 className="text-lg font-bold font-serif tracking-widest bg-gradient-to-r from-gold-200 via-gold-400 to-amber-500 bg-clip-text text-transparent">
+                梅花易數 ． 智能占卜
+              </h1>
+            </div>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => { setInfoTab(mode); setShowInfo(true); }}
+                className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 border border-white/10 hover:border-gold-500/40 text-neutral-300 hover:text-gold-400 active:scale-95 transition-all"
+                title="軟體說明"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </button>
+              <button 
+                onClick={() => setShowSettings(true)}
+                className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 border border-white/10 hover:border-gold-500/40 text-neutral-300 hover:text-gold-400 active:scale-95 transition-all"
+                title="金鑰設定"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              </button>
+            </div>
+          </header>
+
+
+
+          {/* 主體布局：響應式雙欄 (Desktop side-by-side, Mobile single-column) */}
+          <main className="max-w-7xl mx-auto w-full px-4 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
+            
+            {/* 左側：起卦操作與設定欄 (佔 5 欄) */}
+            <section className="lg:col-span-5 space-y-6">
+              
+              {/* 龜殼與銅錢互動區 */}
+              <div className="glass-card rounded-[2rem] p-6 relative overflow-hidden flex flex-col items-center justify-center min-h-[220px]">
+                <div className="absolute -top-10 -left-10 w-24 h-24 rounded-full bg-jade-500/5 blur-2xl"></div>
+                <div className="absolute -bottom-10 -right-10 w-24 h-24 rounded-full bg-gold-500/5 blur-2xl"></div>
+                
+                {mode === 'coin' ? (
+                  <CoinDivinationSandbox
+                    tossStep={tossStep}
+                    coinTossHistory={coinTossHistory}
+                    isCoinShaking={isCoinShaking}
+                    isCoinTossing={isCoinTossing}
+                    currentTossCoins={currentTossCoins}
+                    coinTargetRotations={coinTargetRotations}
+                    startShakingCoins={startShakingCoins}
+                    throwCoins={throwCoins}
+                    handleReset={handleReset}
+                  />
+                ) : isAnimating ? (
+                  <div className="relative w-full flex flex-col items-center">
+                    {/* 龜殼搖晃動畫 */}
+                    <div className="relative w-32 h-24 animate-shake-shell">
+                      <div className="absolute bottom-[-10px] left-1/2 -translate-x-1/2 w-20 h-4 bg-black/50 blur-md rounded-full"></div>
+                      <div className="w-full h-full bg-gradient-to-br from-[#4e3629] via-[#2d1b10] to-[#120a06] rounded-[60%_60%_40%_40%] border-t-2 border-gold-500/30 shadow-[inset_0_4px_12px_rgba(0,0,0,0.9)] relative overflow-hidden flex items-center justify-center">
+                        {/* 龜甲背部紋路 */}
+                        <div className="absolute inset-0 opacity-15" style={{ 
+                          backgroundImage: 'radial-gradient(circle at 50% 50%, transparent 20%, #d4af37 21%, transparent 22%)', 
+                          backgroundSize: '24px 24px' 
+                        }}></div>
+                        <div className="w-16 h-8 border border-gold-500/20 rounded-full"></div>
+                      </div>
+                    </div>
+
+                    {/* 金幣噴灑動畫 */}
+                    <div className="absolute top-6 flex justify-center w-full pointer-events-none">
+                      <div className="absolute animate-coin-1">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-gold-700 via-gold-300 to-gold-700 border border-gold-100/40 shadow-lg flex items-center justify-center">
+                          <div className="w-3.5 h-3.5 bg-[#080a09] border border-gold-700/50"></div>
+                        </div>
+                      </div>
+                      <div className="absolute animate-coin-2">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-gold-700 via-gold-300 to-gold-700 border border-gold-100/40 shadow-lg flex items-center justify-center">
+                          <div className="w-3.5 h-3.5 bg-[#080a09] border border-gold-700/50"></div>
+                        </div>
+                      </div>
+                      <div className="absolute animate-coin-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-gold-700 via-gold-300 to-gold-700 border border-gold-100/40 shadow-lg flex items-center justify-center">
+                          <div className="w-3.5 h-3.5 bg-[#080a09] border border-gold-700/50"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <button 
+                      onClick={() => { setInfoTab('general'); setShowInfo(true); }}
+                      className="relative w-16 h-16 group hover:scale-105 transition-transform active:scale-95 outline-none mb-3"
+                    >
+                      <div className="absolute inset-0 rounded-full border border-gold-500/20 border-dashed animate-spin-slow group-hover:border-gold-500/50"></div>
+                      <div className="text-4xl flex items-center justify-center h-full drop-shadow-[0_0_15px_rgba(212,175,55,0.4)] group-hover:drop-shadow-[0_0_20px_rgba(212,175,55,0.7)] transition-all">☯</div>
+                    </button>
+                    <p className="text-gold-200/70 text-xs font-serif italic tracking-widest text-center px-4 leading-relaxed">
+                      「冥思所求，方見通靈造化；數起天機，感應神明無形。」
+                    </p>
+                  </>
+                )}
+              </div>
+
+              {/* 起卦主卡片 */}
+              <div className="glass-card rounded-[2rem] p-6 shadow-xl backdrop-blur-md">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-base font-bold font-serif flex items-center gap-2 text-gold-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                    占卜設定與起卦
+                  </h2>
+                  <div className="flex gap-1.5 bg-black/40 p-1 rounded-full border border-white/5">
+                    {[['time', '時間'], ['number', '數字'], ['char', '文字'], ['random', '感應'], ['coin', '金錢卦']].map(([mKey, mLabel]) => (
+                      <button
+                        key={mKey}
+                        onClick={() => { setMode(mKey); }}
+                        className={`text-[11px] px-2.5 py-1 rounded-full transition-all ${
+                          mode === mKey ? 'bg-gold-500/20 text-gold-300 font-bold border border-gold-500/20' : 'text-neutral-500 hover:text-neutral-300 border border-transparent'
+                        }`}
+                      >
+                        {mLabel}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {/* 求占問題 */}
+                  <div>
+                    <label className="text-[11px] text-neutral-400 mb-1.5 block ml-1">1. 默念並寫下您想諮詢的具體問題</label>
+                    <textarea 
+                      value={question}
+                      onChange={(e) => setQuestion(e.target.value)}
+                      className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 h-24 focus:outline-none focus:border-gold-500/40 text-sm transition-all text-neutral-200 placeholder-neutral-600 resize-none"
+                      placeholder="例如：請指引我近期轉職的吉凶與注意事項？..."
+                    />
+                  </div>
+
+                  {/* 起卦動態參數 */}
+                  <div className="bg-black/30 border border-white/5 p-4 rounded-2xl">
+                    {mode === 'time' && (
+                      <div className="space-y-2 animate-in fade-in duration-300">
+                        <label className="text-[11px] text-neutral-400 block">2. 選擇起卦日期與時間</label>
+                        <input 
+                          type="datetime-local" 
+                          value={dateTime}
+                          onChange={(e) => setDateTime(e.target.value)}
+                          className="w-full bg-black/60 border border-white/10 rounded-xl p-3 focus:outline-none focus:border-gold-500/40 text-sm text-gold-200"
+                        />
+                        <div className="text-[10px] text-jade-400 mt-1 block italic font-serif">
+                          系統會自動將所選的陽曆時間，依農曆月日與地支時辰運算出對應的卦象。
+                        </div>
+                      </div>
+                    )}
+
+                    {mode === 'number' && (
+                      <div className="space-y-3 animate-in fade-in duration-300">
+                        <label className="text-[11px] text-neutral-400 block">
+                          2. 請填入三組三位數靈動數 <span className="text-[10px] text-gold-500/50 italic font-light">(如 369, 168, 520)</span>
+                        </label>
+                        <div className="grid grid-cols-3 gap-3">
+                          {['n1', 'n2', 'n3'].map((key, index) => (
+                            <input 
+                              key={key}
+                              type="number" 
+                              inputMode="numeric"
+                              value={nums[key]} 
+                              onChange={(e) => setNums({...nums, [key]: e.target.value})} 
+                              className="bg-black/50 border border-white/10 rounded-xl py-3 text-center text-lg focus:outline-none focus:border-gold-500/40 text-gold-200 appearance-none"
+                              placeholder={['上卦', '下卦', '動爻'][index]}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {mode === 'char' && (
+                      <div className="space-y-2 animate-in fade-in duration-300">
+                        <label className="text-[11px] text-neutral-400 block">2. 輸入一組漢字（至少 1 字）</label>
+                        <input 
+                          type="text" 
+                          value={charText}
+                          onChange={(e) => setCharText(e.target.value)}
+                          className="w-full bg-black/60 border border-white/10 rounded-xl p-3 focus:outline-none focus:border-gold-500/40 text-sm text-gold-200 placeholder-neutral-600"
+                          placeholder="例如：吉、國泰民安、前程似錦"
+                        />
+                        <div className="text-[10px] text-jade-400 mt-1 block italic font-serif">
+                          系統將透過內置字庫，精確計算每個漢字之繁體筆劃起卦（支援繁簡體）。
+                        </div>
+                      </div>
+                    )}
+
+                    {mode === 'random' && (
+                      <div className="text-center py-4 space-y-2 animate-in fade-in duration-300">
+                        <div className="text-xs text-gold-300/80 font-serif">「無事不占，以心感應，隨機求問」</div>
+                        <div className="text-[10px] text-neutral-500">
+                          點擊下方按鈕，系統將自動隨機產生靈動數並即時演繹卦象。
+                        </div>
+                      </div>
+                    )}
+
+                    {mode === 'coin' && (
+                      <div className="space-y-4 animate-in fade-in duration-300">
+                        <label className="text-[11px] text-neutral-400 block ml-1">2. 六爻起卦累積卦象 (由下至上)</label>
+                        <div className="bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center min-h-[140px]">
+                          {coinTossHistory.length === 0 ? (
+                            <div className="text-center text-xs text-neutral-600 italic py-6">
+                              暫無卦爻累積，請在上方沙盒搖卦起爻
+                            </div>
+                          ) : (
+                            <div className="flex flex-col gap-2.5 w-full max-w-[140px] py-2 items-center">
+                              {coinTossHistory.slice().reverse().map((h) => {
+                                const isMoving = h.isMoving;
+                                const lineType = h.lineType;
+                                
+                                // 爻線樣式
+                                let lineStyle = "h-2 rounded-sm bg-gradient-to-r ";
+                                if (isMoving) {
+                                  lineStyle += "from-yellow-400 via-gold-300 to-yellow-500 animate-yao-glow";
+                                } else {
+                                  lineStyle += "from-gold-600 via-gold-400 to-gold-600";
+                                }
+
+                                return (
+                                  <div key={h.step} className="w-full relative flex items-center justify-center h-4">
+                                    {lineType === 1 ? (
+                                      /* 陽爻 */
+                                      <div className={`w-full ${lineStyle}`} />
+                                    ) : (
+                                      /* 陰爻 */
+                                      <div className="w-full flex justify-between">
+                                        <div className={`w-[45%] ${lineStyle}`} />
+                                        <div className={`w-[45%] ${lineStyle}`} />
+                                      </div>
+                                    )}
+                                    <span className="absolute -left-12 text-[9px] text-neutral-500 font-serif">
+                                      {['初爻', '二爻', '三爻', '四爻', '五爻', '上爻'][h.step - 1]}
+                                    </span>
+                                    <span className="absolute -right-16 text-[9px] text-neutral-400 font-serif">
+                                      {h.symbol}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-jade-400 block italic font-serif leading-relaxed text-center">
+                          ※ 3正為老陽(動) ➔ 記為 —o—；3反為老陰(動) ➔ 記為 —x—；<br />
+                          2正1反為少陰 ➔ 記為 — ─；1正2反為少陽 ➔ 記為 ───。
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 開始按鈕 */}
+                  {mode !== 'coin' && (
+                    <button 
+                      onClick={handleDivination}
+                      disabled={
+                        isAnimating || 
+                        (mode === 'number' && (!nums.n1 || !nums.n2 || !nums.n3)) ||
+                        (mode === 'char' && charText.trim().length === 0)
+                      }
+                      className="w-full mt-2 btn-shimmer active:scale-[0.98] text-[#1c180b] font-bold py-4 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-20 text-sm tracking-widest font-serif"
+                    >
+                      {isAnimating ? (
+                        <>
+                          <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.5" /></svg>
+                          正在推演天機...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                          開始深度占卜
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="glass-card rounded-[2rem] p-6 shadow-xl">
+                <h3 className="text-sm font-bold font-serif text-neutral-300 mb-4 flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-jade-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    歷史占卜紀錄 ({history.length})
+                  </span>
+                  {history.length > 0 && (
+                    <button 
+                      onClick={() => { if(confirm("確定要清除所有紀錄嗎？")) setHistory([]); }}
+                      className="text-[10px] text-red-400 hover:text-red-300"
+                    >
+                      清空
+                    </button>
+                  )}
+                </h3>
+                
+                {history.length === 0 ? (
+                  <div className="text-center py-6 text-xs text-neutral-600 italic">
+                    尚無占卜紀錄，起卦後將自動保存於此處。
+                  </div>
+                ) : (
+                  <div className="max-h-[300px] overflow-y-auto space-y-3 pr-1">
+                    {history.map((item) => (
+                      <div
+                        key={item.id}
+                        onClick={() => handleRestoreHistory(item)}
+                        className={`p-3 rounded-xl cursor-pointer border transition-all glass-card-hover flex justify-between items-start ${
+                          selectedHistory === item.id 
+                            ? 'bg-gold-500/10 border-gold-500/40 shadow-inner' 
+                            : 'bg-black/20 border-white/5 hover:border-gold-500/20'
+                        }`}
+                      >
+                        <div className="space-y-1 select-none flex-1 min-w-0 pr-2">
+                          <div className="text-xs font-semibold text-neutral-200 truncate font-serif">
+                            問：{item.question}
+                          </div>
+                          <div className="flex gap-2 text-[10px] text-neutral-400 font-serif">
+                            <span>{item.guaName}卦</span>
+                            <span>({item.status})</span>
+                          </div>
+                          <div className="text-[9px] text-neutral-500 truncate">
+                            「{item.summary}」
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end justify-between h-full gap-2 pl-1">
+                          <button
+                            onClick={(e) => handleDeleteHistory(item.id, e)}
+                            className="text-neutral-600 hover:text-red-400 p-0.5 rounded transition-colors"
+                            title="刪除"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                          <span className="text-[8px] text-neutral-600 whitespace-nowrap">{item.result.timestamp.split(' ')[0]}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+            </section>
+
+            {/* 右側：卦象視覺化與解卦報告欄 (佔 7 欄) */}
+            <section className="lg:col-span-7 space-y-6">
+              
+              {!result ? (
+                /* 未起卦時的引導介面與動畫推演指示 */
+                <div className="glass-card rounded-[2.5rem] p-10 flex flex-col items-center justify-center text-center min-h-[500px] shadow-2xl relative overflow-hidden">
+                  <div className="absolute inset-0 opacity-5 select-none pointer-events-none flex items-center justify-center">
+                    <span className="text-[250px] text-gold-500 font-serif animate-spin-slow">☯</span>
+                  </div>
+                  <div className="relative z-10 space-y-6 max-w-sm">
+                    {isAnimating ? (
+                      <div className="space-y-6 animate-pulse">
+                        <div className="text-7xl text-gold-500 drop-shadow-[0_0_20px_rgba(212,175,55,0.6)]">☯</div>
+                        <div className="space-y-2">
+                          <h3 className="text-xl font-bold font-serif text-gold-300 tracking-wider">正在感應卦氣...</h3>
+                          <div className="h-px w-16 bg-gold-500/20 mx-auto"></div>
+                        </div>
+                        <p className="text-xs text-neutral-400 font-serif leading-relaxed italic">
+                          金水相生，風雷鼓盪。<br />
+                          龜殼已動，銅錢落地，正為您推演天地造化之玄機，請稍候。
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="text-7xl text-gold-500/40 drop-shadow-[0_0_20px_rgba(212,175,55,0.25)]">☯</div>
+                        <div className="space-y-2">
+                          <h3 className="text-xl font-bold font-serif text-gold-300 tracking-wider">天機預示面板</h3>
+                          <div className="h-px w-16 bg-gold-500/20 mx-auto"></div>
+                        </div>
+                        <p className="text-xs text-neutral-400 font-serif leading-relaxed italic">
+                          「無極生太極，太極生兩儀，兩儀生四象，四象生八卦。」<br />
+                          請在左側填寫心之所問，靜心排除雜念，輸入起卦參數後開始占問吉凶。
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* 已起卦時的結果面板 */
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                  
+                  {/* 控制列 */}
+                  <div className="flex justify-between items-center px-1">
+                    <button 
+                      onClick={handleReset} 
+                      className="flex items-center gap-1.5 px-4 py-2 bg-white/5 border border-white/10 rounded-full text-[11px] text-neutral-300 hover:text-gold-300 active:scale-95 transition-all font-serif"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                      重起新卦
+                    </button>
+                    <button 
+                      onClick={handleCopyReport}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-gold-500/10 border border-gold-500/20 rounded-full text-[11px] text-gold-500 hover:bg-gold-500/20 active:scale-95 transition-all font-serif"
+                    >
+                      {copied ? (
+                        <>
+                          <svg className="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                          報告已複製
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+                          複製占卜報告
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* 起卦背景說明 */}
+                  <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 text-center">
+                    <p className="text-xs text-neutral-400 font-serif">
+                      <strong className="text-gold-500/80 mr-1.5">起卦法門：</strong>
+                      {result.detailsText}
+                    </p>
+                  </div>
+
+                  {/* 三卦視覺化卡片 (本卦、互卦、變卦) */}
+                  <div className="glass-card rounded-[2.5rem] p-6 lg:p-8 shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-4 right-8 text-[8px] font-mono text-gold-500/20 tracking-[0.4em] uppercase">Divination Hexagrams</div>
+                    
+                    {/* 三卦並排顯示 */}
+                    <div className="grid grid-cols-3 gap-2 sm:gap-6 relative z-10 py-4">
+                      
+                      {/* 本卦 */}
+                      <HexagramCard 
+                        title="本卦" 
+                        subTitle="代表目前現狀"
+                        shangGua={result.shangGua} 
+                        xiaGua={result.xiaGua}
+                        lines={getHexagramLines(result.shangGua.name, result.xiaGua.name)}
+                        movingYao={result.movingYao}
+                        isMain={true}
+                        tiGua={result.tiGua}
+                        yongGua={result.yongGua}
+                        getGuaName={getGuaName}
+                      />
+                      
+                      {/* 互卦 */}
+                      <HexagramCard 
+                        title="互卦" 
+                        subTitle="代表發展過程"
+                        shangGua={result.huShangGua} 
+                        xiaGua={result.huXiaGua}
+                        lines={getHexagramLines(result.huShangGua.name, result.huXiaGua.name)}
+                        isMain={false}
+                        getGuaName={getGuaName}
+                      />
+                      
+                      {/* 變卦 */}
+                      <HexagramCard 
+                        title="變卦" 
+                        subTitle="代表最終結局"
+                        shangGua={result.bianShangGua} 
+                        xiaGua={result.bianXiaGua}
+                        lines={getHexagramLines(result.bianShangGua.name, result.bianXiaGua.name)}
+                        movingYao={result.movingYao}
+                        isMain={false}
+                        tiGua={result.bianTiGua}
+                        yongGua={result.bianYongGua}
+                        isChangedGua={true}
+                        getGuaName={getGuaName}
+                      />
+                      
+                    </div>
+                  </div>
+
+                  {/* 體用生剋吉凶分析卡片 */}
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                    
+                    {/* 體用大盤分析 */}
+                    <div className="md:col-span-5 bg-gradient-to-br from-[#1a140b] via-[#090b0a] to-[#090b0a] border border-gold-500/20 p-6 rounded-[2rem] shadow-xl flex flex-col justify-between items-center text-center">
+                      <div className="w-full">
+                        <span className="text-[10px] text-gold-500/50 tracking-[0.3em] font-bold block uppercase mb-1">Fortune Score</span>
+                        <div className="inline-flex items-center px-4 py-1.5 bg-gold-500/10 border border-gold-500/20 text-gold-400 rounded-full text-xs font-serif font-semibold">
+                          {result.basicAnalysis.status}
+                        </div>
+                      </div>
+                      
+                      <div className="py-6 flex flex-col items-center">
+                        <span className="text-6xl font-extrabold text-gold-400 tracking-tighter drop-shadow-[0_0_15px_rgba(212,175,55,0.3)] font-serif">
+                          {result.basicAnalysis.score}%
+                        </span>
+                        <span className="text-[10px] text-neutral-400 mt-2 font-serif tracking-widest">卦氣合諧度估值</span>
+                      </div>
+
+                      <div className="w-full text-xs text-neutral-400 font-serif leading-relaxed px-2">
+                        <strong>體用關係：</strong>{result.tiGua.name}(體-{result.tiGua.element}) 與 {result.yongGua.name}(用-{result.yongGua.element}) 呈現 {result.basicAnalysis.status}。
+                      </div>
+                    </div>
+
+                    {/* 詳細生剋與季節卦氣說明 */}
+                    <div className="md:col-span-7 glass-card p-6 rounded-[2rem] shadow-xl flex flex-col justify-between">
+                      <div className="space-y-3">
+                        <h4 className="text-xs font-bold text-gold-400 font-serif tracking-wider">
+                          ☯ 邵康節梅花五行推演口訣
+                        </h4>
+                        <p className="text-xs text-neutral-300 leading-relaxed font-serif">
+                          {result.basicAnalysis.desc}
+                        </p>
+                      </div>
+                      <div className="border-t border-white/5 pt-4 mt-4 space-y-2">
+                        <h5 className="text-[11px] font-bold text-jade-400 font-serif">🍂 季節卦氣衰旺參考</h5>
+                        <p className="text-[10px] text-neutral-400 leading-relaxed font-serif">
+                          春季木旺火相，秋季金旺水相，夏季火旺土相，冬季水旺木相，四季末土旺金相。當體卦處於旺相季節，則自身氣場強大，即使受克亦能逢凶化吉；若體卦處於休囚死季節，則需更加保守防範。
+                        </p>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* AI 深度解卦板塊 */}
+                  <div className="space-y-4">
+                    <h3 className="text-base font-bold font-serif text-gold-300 px-1 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-gold-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+                      AI 六爻靈動深度解卦
+                    </h3>
+
+                    {/* AI 解卦格線 */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <AnalysisCard icon="💼" title="事業工作" content={aiAnalysis?.career} loading={!aiAnalysis} />
+                      <AnalysisCard icon="❤️" title="情感人際" content={aiAnalysis?.love} loading={!aiAnalysis} />
+                      <AnalysisCard icon="💵" title="財富狀況" content={aiAnalysis?.wealth} loading={!aiAnalysis} />
+                      <AnalysisCard icon="🏠" title="家庭生活" content={aiAnalysis?.family} loading={!aiAnalysis} />
+                      <AnalysisCard icon="🏥" title="健康預警" content={aiAnalysis?.health} loading={!aiAnalysis} className="sm:col-span-2" />
+                    </div>
+
+                    {/* 神機總結 */}
+                    {aiAnalysis?.summary && (
+                      <div className="bg-gradient-to-r from-gold-900/10 via-gold-500/5 to-gold-900/10 border border-gold-500/20 p-6 rounded-[2rem] text-center backdrop-blur-sm shadow-lg">
+                        <span className="text-[9px] text-gold-500/60 font-serif tracking-[0.4em] uppercase block mb-1">Zen Verse</span>
+                        <p className="italic text-gold-200/90 font-serif text-[15px] leading-relaxed tracking-wide px-4">
+                          「 {aiAnalysis.summary} 」
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              )}
+
+            </section>
+
+          </main>
+
+          {/* 說明彈窗 (Overlay Modal) */}
+          {showInfo && (
+            <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="glass-card max-w-2xl w-full rounded-[2.5rem] p-6 sm:p-8 space-y-6 relative max-h-[85vh] overflow-y-auto">
+                <button 
+                  onClick={() => setShowInfo(false)}
+                  className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-200 p-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                
+                <div className="text-center space-y-2">
+                  <span className="text-4xl text-gold-500">☯</span>
+                  <h3 className="text-lg font-bold font-serif text-gold-300">《梅花易數》起卦原理說明</h3>
+                  <div className="h-px w-12 bg-gold-500/20 mx-auto"></div>
+                </div>
+
+                {/* 頁籤選擇 */}
+                <div className="flex flex-wrap gap-1.5 justify-center border-b border-gold-500/10 pb-4">
+                  {[
+                    ['general', '基本原理'],
+                    ['time', '時間起卦'],
+                    ['number', '數字起卦'],
+                    ['char', '文字起卦'],
+                    ['random', '感應起卦'],
+                    ['coin', '金錢卦']
+                  ].map(([tabKey, tabLabel]) => (
+                    <button
+                      key={tabKey}
+                      onClick={() => setInfoTab(tabKey)}
+                      className={`text-xs px-3.5 py-1.5 rounded-full transition-all border ${
+                        infoTab === tabKey 
+                          ? 'bg-gold-500/10 text-gold-300 font-bold border-gold-500/30 shadow-[0_0_8px_rgba(212,175,55,0.2)]' 
+                          : 'bg-black/20 text-neutral-400 border-white/5 hover:text-neutral-200'
+                      }`}
+                    >
+                      {tabLabel}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="space-y-4 text-xs text-neutral-300 font-serif leading-relaxed text-justify">
+                  {infoTab === 'general' && (
+                    <div className="space-y-4 animate-in fade-in duration-300">
+                      <div className="relative w-full rounded-2xl overflow-hidden border border-gold-500/20 shadow-md mb-4 bg-black/40">
+                        <img 
+                          src="./shaoyong_plum.jpg" 
+                          alt="邵康節與梅花易數原理圖" 
+                          className="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity duration-300"
+                        />
+                      </div>
+                      <p>
+                        <strong className="text-gold-400">一、起源背景：</strong><br />
+                        《梅花易數》為宋代易學大師<strong>邵康節（邵雍）</strong>所創。相傳大師偶觀梅花，見雀爭枝墜地，因而起卦，推斷出「明日有女子前來折花，傷及大腿」，翌日果然應驗，此占法因而名聲大噪。
+                      </p>
+                      <p>
+                        <strong className="text-gold-400">二、體用生剋判定：</strong><br />
+                        起卦後會產生一個「動爻」。動爻所在的八卦為<strong>用卦（用）</strong>，代表要求占的事物或外在環境；沒有動爻的卦為<strong>體卦（體）</strong>，代表自己。
+                        透過兩者的五行屬性生剋關係來判定吉凶：
+                      </p>
+                      <ul className="list-disc pl-5 space-y-1.5 text-neutral-400">
+                        <li><strong className="text-gold-500/80">用生體 (大吉)：</strong> 事情發展對自己大為有利，多有貴人助。</li>
+                        <li><strong className="text-gold-500/80">體克用 (小吉)：</strong> 自身克制事物，代表雖有難度但終能克服獲利。</li>
+                        <li><strong className="text-gold-500/80">體用比和 (吉)：</strong> 雙方五行相同，代表平穩順遂、多助。</li>
+                        <li><strong className="text-gold-500/80">體生用 (小凶)：</strong> 自身力量洩出，代表勞心傷財、吃力不討好。</li>
+                        <li><strong className="text-gold-500/80">用克體 (大凶)：</strong> 外界力量克制自己，代表阻礙、凶險，宜退避。</li>
+                      </ul>
+                      <p>
+                        <strong className="text-gold-400">三、三卦的作用：</strong><br />
+                        <strong>本卦</strong>象徵事件的初始狀態與核心氣場；<strong>互卦</strong>（去初爻與上爻，中間四爻重組）象徵事件發展的中間曲折與內部因素；<strong>變卦</strong>（動爻變換後的卦象）象徵事情的終局與結果。
+                      </p>
+                    </div>
+                  )}
+
+                  {infoTab === 'time' && (
+                    <div className="space-y-4 animate-in fade-in duration-300">
+                      <h4 className="text-sm font-bold text-gold-400 font-serif border-l-2 border-gold-500 pl-2">🕰️ 時間起卦原理</h4>
+                      <p>
+                        時間起卦法是依據占卜當下的「陽曆時間」，自動轉換為傳統的「農曆日期」與「時辰地支」來進行起卦。這是《梅花易數》中最經典、最常用的起卦法門，體現了「天人合一、隨機應兆」的核心思想。
+                      </p>
+                      <div className="bg-black/30 border border-white/5 p-4 rounded-xl space-y-2">
+                        <strong className="text-gold-500/90 text-xs">運算公式：</strong>
+                        <ul className="list-disc pl-5 space-y-1.5 text-neutral-400 text-[11px]">
+                          <li><strong className="text-neutral-300">上卦數</strong> = (農曆年支數 + 農曆月 + 農曆日) ÷ 8 ➔ 求餘數。</li>
+                          <li><strong className="text-neutral-300">下卦數</strong> = (農曆年支數 + 農曆月 + 農曆日 + 時辰地支數) ÷ 8 ➔ 求餘數。</li>
+                          <li><strong className="text-neutral-300">動爻數</strong> = (農曆年支數 + 農曆月 + 農曆日 + 時辰地支數) ÷ 6 ➔ 求餘數。</li>
+                          <li>※ 若整除，則餘數以 8 (卦) 或 6 (爻) 計算。</li>
+                        </ul>
+                      </div>
+                      <div className="bg-black/30 border border-white/5 p-4 rounded-xl space-y-2">
+                        <strong className="text-gold-500/90 text-xs">地支數對照表：</strong>
+                        <div className="grid grid-cols-6 gap-2 text-[11px] text-center text-neutral-300 font-serif">
+                          <div className="bg-white/5 p-1 rounded">子 (1)</div>
+                          <div className="bg-white/5 p-1 rounded">丑 (2)</div>
+                          <div className="bg-white/5 p-1 rounded">寅 (3)</div>
+                          <div className="bg-white/5 p-1 rounded">卯 (4)</div>
+                          <div className="bg-white/5 p-1 rounded">辰 (5)</div>
+                          <div className="bg-white/5 p-1 rounded">巳 (6)</div>
+                          <div className="bg-white/5 p-1 rounded">午 (7)</div>
+                          <div className="bg-white/5 p-1 rounded">未 (8)</div>
+                          <div className="bg-white/5 p-1 rounded">申 (9)</div>
+                          <div className="bg-white/5 p-1 rounded">酉 (10)</div>
+                          <div className="bg-white/5 p-1 rounded">戌 (11)</div>
+                          <div className="bg-white/5 p-1 rounded">亥 (12)</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {infoTab === 'number' && (
+                    <div className="space-y-4 animate-in fade-in duration-300">
+                      <h4 className="text-sm font-bold text-gold-400 font-serif border-l-2 border-gold-500 pl-2">🔢 數字起卦原理</h4>
+                      <p>
+                        數字起卦法基於「萬物皆有數」的原理。當求占者心中默念問題時，隨機想到的三組數字，即代表了當前特定時空下的心靈投影與能量狀態。
+                      </p>
+                      <div className="bg-black/30 border border-white/5 p-4 rounded-xl space-y-2">
+                        <strong className="text-gold-500/90 text-xs">運算公式：</strong>
+                        <ul className="list-disc pl-5 space-y-1.5 text-neutral-400 text-[11px]">
+                          <li><strong className="text-neutral-300">上卦數</strong> = 第一組隨機數 ÷ 8 ➔ 求餘數，對應先天八卦。</li>
+                          <li><strong className="text-neutral-300">下卦數</strong> = 第二組隨機數 ÷ 8 ➔ 求餘數，對應先天八卦。</li>
+                          <li><strong className="text-neutral-300">動爻數</strong> = 第三組隨機數 ÷ 6 ➔ 求餘數，決定第幾爻發動（發生轉變）。</li>
+                          <li>※ 若餘數為 0，則以除數（8 或 6）為對應值。</li>
+                        </ul>
+                      </div>
+                      <p className="text-neutral-400">
+                        此起卦方式廣泛應用於周遭環境的數字聯想（例如車牌號、報數、隨手寫下的數值），是極為靈活的梅花預測法。
+                      </p>
+                    </div>
+                  )}
+
+                  {infoTab === 'char' && (
+                    <div className="space-y-4 animate-in fade-in duration-300">
+                      <h4 className="text-sm font-bold text-gold-400 font-serif border-l-2 border-gold-500 pl-2">🔤 文字起卦原理</h4>
+                      <p>
+                        漢字具有象形、會意與五行屬性，文字起卦是將漢字的 **繁體筆劃數** 轉換為天機神數的預測法門。本系統內置精準字庫，能自動計算用戶所輸入漢字的精準繁體筆劃。
+                      </p>
+                      <div className="bg-black/30 border border-white/5 p-4 rounded-xl space-y-3">
+                        <div>
+                          <strong className="text-gold-500/90 text-xs">1. 單字占起卦法：</strong>
+                          <p className="text-neutral-400 text-[11px] pl-2 mt-1 leading-relaxed">
+                            單字之筆劃數為上卦數；起卦時辰地支數為下卦數；(單字筆劃 + 時辰地支數) ÷ 6 的餘數為動爻。
+                          </p>
+                        </div>
+                        <div>
+                          <strong className="text-gold-500/90 text-xs">2. 多字占起卦法：</strong>
+                          <p className="text-neutral-400 text-[11px] pl-2 mt-1 leading-relaxed">
+                            將文字拆為前後兩部分（若字數為奇數，前段字數少一字，後段多一字，即「前輕後重」、「天輕地重」）。
+                            前段筆劃總和為上卦；後段筆劃總和為下卦；(總筆劃數 + 時辰地支數) ÷ 6 的餘數為動爻。
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {infoTab === 'random' && (
+                    <div className="space-y-4 animate-in fade-in duration-300">
+                      <h4 className="text-sm font-bold text-gold-400 font-serif border-l-2 border-gold-500 pl-2">🌀 感應起卦原理</h4>
+                      <p>
+                        感應起卦法（又稱隨機起卦或每日運勢起卦）遵循「動靜莫測，唯心感通」的原則。當求占者心中無特定起卦素材，亦無時間或文字線索時，以完全隨機的數值映射天地運行的態勢。
+                      </p>
+                      <div className="bg-black/30 border border-white/5 p-4 rounded-xl space-y-2">
+                        <strong className="text-gold-500/90 text-xs">運行機制：</strong>
+                        <p className="text-neutral-400 text-[11px] leading-relaxed">
+                          系統在用戶點擊的瞬間，在背景隨機抽取三組靈動數，分別對應上卦、下卦與動爻。
+                          這能最真實地反映當前宇宙微觀狀態的瞬時漲落，適用於快速測算當前或今日之綜合運勢。
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {infoTab === 'coin' && (
+                    <div className="space-y-4 animate-in fade-in duration-300">
+                      <h4 className="text-sm font-bold text-gold-400 font-serif border-l-2 border-gold-500 pl-2">🪙 六爻金錢卦原理</h4>
+                      <p>
+                        金錢卦源於周易的古老卜筮儀式，又稱「六爻金錢占」。它藉由搖動龜殼（象徵天圓地方的宇宙容器）與擲出三枚金色銅錢（代表天、地、人三才），進行連續六次投擲，從下到上（初爻到上爻）生成六爻。
+                      </p>
+                      <div className="bg-black/30 border border-white/5 p-4 rounded-xl space-y-2">
+                        <strong className="text-gold-500/90 text-xs">每次投擲結果映射：</strong>
+                        <div className="grid grid-cols-2 gap-3 text-[11px] text-neutral-300 font-serif">
+                          <div className="bg-white/5 p-2 rounded flex flex-col justify-between">
+                            <span className="text-gold-400 font-bold">3 個正面 (字) ➔ 老陽 (—o—)</span>
+                            <span className="text-[10px] text-neutral-500 mt-1">動爻。本卦為陽爻，變卦中翻轉變為陰爻。</span>
+                          </div>
+                          <div className="bg-white/5 p-2 rounded flex flex-col justify-between">
+                            <span className="text-gold-400 font-bold">2 個正面 1 個反面 ➔ 少陰 (— —)</span>
+                            <span className="text-[10px] text-neutral-500 mt-1">靜爻。本卦為陰爻，變卦中保持不變。</span>
+                          </div>
+                          <div className="bg-white/5 p-2 rounded flex flex-col justify-between">
+                            <span className="text-gold-400 font-bold">1 個正面 2 個反面 ➔ 少陽 (———)</span>
+                            <span className="text-[10px] text-neutral-500 mt-1">靜爻。本卦為陽爻，變卦中保持不變。</span>
+                          </div>
+                          <div className="bg-white/5 p-2 rounded flex flex-col justify-between">
+                            <span className="text-gold-400 font-bold">3 個反面 (幕) ➔ 老陰 (—x—)</span>
+                            <span className="text-[10px] text-neutral-500 mt-1">動爻。本卦為陰爻，變卦中翻轉變為陽爻。</span>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-neutral-400 text-xs text-justify">
+                        六次投擲完成後，系統會提取前三次為下卦（內卦），後三次為上卦（外卦）。老陽與老陰為「動爻」（變爻），所處的位置即為卦象生變的關鍵，預示了事物當前的本質（本卦）以及未來的演變結局（變卦）。
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 設定彈窗 (API Key Settings) */}
+          {showSettings && (
+            <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+              <SettingsModal 
+                currentKey={customApiKey} 
+                currentModel={selectedModel}
+                onSave={saveSettings} 
+                onClose={() => setShowSettings(false)} 
+              />
+            </div>
+          )}
+
+        </div>
+      );
+    };
+
+    // 卦象展示卡片組件 (本卦、互卦、變卦之六爻繪製)
+    const HexagramCard = ({ title, subTitle, shangGua, xiaGua, lines, movingYao, isMain, tiGua, yongGua, isChangedGua, getGuaName }) => {
+      
+      const guaName = getGuaName(shangGua, xiaGua);
+
+      return (
+        <div className="flex flex-col items-center bg-black/30 border border-white/5 p-4 sm:p-5 rounded-2xl relative overflow-hidden select-none">
+          
+          <div className="text-center mb-3">
+            <span className="text-[10px] text-neutral-500 font-serif block">{subTitle}</span>
+            <span className="text-xs font-bold text-gold-400 font-serif tracking-widest">{title}</span>
+          </div>
+
+          {/* 畫出六爻 (從上往下畫，爻順序是上爻(5)在頂，初爻(0)在底) */}
+          <div className="flex flex-col gap-2.5 w-full py-4 max-w-[120px] items-center justify-center">
+            {lines.slice().reverse().map((line, revIdx) => {
+              const actualIdx = 5 - revIdx; // 爻在原 lines 陣列中的真正索引 (0-5)
+              const isMovingLine = movingYao !== undefined && (actualIdx === movingYao - 1);
+              
+              // 決定爻的顏色與光芒樣式
+              let lineStyle = "h-2.5 rounded-sm transition-all duration-300 ";
+              if (isMovingLine) {
+                lineStyle += "bg-gradient-to-r from-yellow-400 via-gold-300 to-yellow-500 animate-yao-glow ";
+              } else {
+                lineStyle += "bg-gradient-to-r from-gold-600 via-gold-400 to-gold-600 ";
+              }
+
+              return (
+                <div key={actualIdx} className="w-full relative flex items-center justify-center h-4">
+                  {line === 1 ? (
+                    /* 陽爻 (整條) */
+                    <div className={`w-full ${lineStyle}`} />
+                  ) : (
+                    /* 陰爻 (斷成兩條) */
+                    <div className="w-full flex justify-between">
+                      <div className={`w-[45%] ${lineStyle}`} />
+                      <div className={`w-[45%] ${lineStyle}`} />
+                    </div>
+                  )}
+                  {/* 動爻的標識 */}
+                  {isMovingLine && (
+                    <span className="absolute -right-5 text-[8px] text-yellow-400 font-bold animate-pulse">
+                      {isChangedGua ? '變' : '動'}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 卦名 */}
+          <div className="text-center mt-3 space-y-1">
+            <span className="text-lg font-bold text-neutral-200 font-serif tracking-tighter">
+              {shangGua.nature}{guaName === '乾' || guaName === '坤' || guaName === '震' || guaName === '巽' || guaName === '坎' || guaName === '離' || guaName === '艮' || guaName === '兌' ? '' : xiaGua.nature}
+            </span>
+            <span className="text-xs text-gold-500/80 font-serif block">
+              {guaName}卦
+            </span>
+          </div>
+
+          {/* 體用標籤 */}
+          {tiGua && yongGua && (
+            <div className="mt-3 w-full flex flex-col gap-1 text-[9px] text-center border-t border-white/5 pt-2">
+              <div className="flex justify-between px-1">
+                <span className="text-neutral-500 font-serif">上卦:</span>
+                <span className={`font-bold font-serif ${tiGua.name === shangGua.name ? 'text-jade-400' : 'text-amber-500/80'}`}>
+                  {shangGua.name}({shangGua.element}) {tiGua.name === shangGua.name ? '體' : '用'}
+                </span>
+              </div>
+              <div className="flex justify-between px-1">
+                <span className="text-neutral-500 font-serif">下卦:</span>
+                <span className={`font-bold font-serif ${tiGua.name === xiaGua.name ? 'text-jade-400' : 'text-amber-500/80'}`}>
+                  {xiaGua.name}({xiaGua.element}) {tiGua.name === xiaGua.name ? '體' : '用'}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* 互卦的自然屬性 */}
+          {!tiGua && (
+            <div className="mt-3 w-full flex flex-col gap-1 text-[9px] text-center border-t border-white/5 pt-2 text-neutral-400 font-serif">
+              <div>上互: {shangGua.name}({shangGua.element})</div>
+              <div>下互: {xiaGua.name}({xiaGua.element})</div>
+            </div>
+          )}
+
+        </div>
+      );
+    };
+
+    // AI分析項目卡片組件
+    const AnalysisCard = ({ icon, title, content, loading, className = "" }) => {
+      return (
+        <div className={`glass-card p-5 rounded-[1.8rem] transition-all hover:border-gold-500/30 ${className}`}>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-lg">{icon}</span>
+            <span className="font-bold text-xs text-gold-300 font-serif tracking-wider">{title}</span>
+          </div>
+          {loading ? (
+            <div className="space-y-2.5 animate-pulse py-2">
+              <div className="h-2 bg-white/10 rounded w-full"></div>
+              <div className="h-2 bg-white/10 rounded w-5/6"></div>
+              <div className="h-2 bg-white/10 rounded w-2/3"></div>
+            </div>
+          ) : (
+            <p className="text-neutral-300 text-xs leading-relaxed font-serif text-justify">
+              {content}
+            </p>
+          )}
+        </div>
+      );
+    };
+
+    // 金鑰與模型設定彈窗組件
+    const SettingsModal = ({ currentKey, currentModel, onSave, onClose }) => {
+      const [key, setKey] = useState(currentKey);
+      const [model, setModel] = useState(() => {
+        if (currentModel === 'gemini-1.5-flash') return 'gemini-2.0-flash';
+        if (currentModel === 'gemini-1.5-pro') return 'gemini-2.5-pro';
+        if (currentModel === 'gemini-flash-latest') return 'gemini-2.0-flash';
+        if (currentModel === 'gemini-pro-latest') return 'gemini-2.5-pro';
+        return currentModel || 'gemini-2.0-flash';
+      });
+
+      return (
+        <div className="glass-card max-w-sm w-full rounded-[2.5rem] p-6 space-y-6 relative animate-in zoom-in-95 duration-200">
+          <button 
+            onClick={onClose}
+            className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-200 p-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+          
+          <div className="text-center space-y-2">
+            <h3 className="text-base font-bold font-serif text-gold-300">⚙ 金鑰與 AI 模型配置</h3>
+            <div className="h-px w-8 bg-gold-500/20 mx-auto"></div>
+          </div>
+
+          <div className="space-y-4">
+            {/* Gemini API Key */}
+            <div className="space-y-1">
+              <label className="text-[11px] text-neutral-400 block ml-1">Gemini API 金鑰：</label>
+              <input 
+                type="password" 
+                value={key}
+                onChange={(e) => setKey(e.target.value)}
+                className="w-full bg-black/60 border border-white/10 rounded-xl p-3 focus:outline-none focus:border-gold-500/40 text-xs text-gold-200 placeholder-neutral-700"
+                placeholder={apiKey ? "已自動注入環境金鑰" : "請貼入您的 AI Studio 金鑰"}
+              />
+              {!key && !apiKey && (
+                <div className="text-[9px] text-amber-500/70 ml-1 italic font-serif leading-tight">
+                  ※ 未填入金鑰時，系統會以傳統五行生剋與周易卦意進行基礎解卦。
+                </div>
+              )}
+            </div>
+
+            {/* 模型選擇 */}
+            <div className="space-y-1">
+              <label className="text-[11px] text-neutral-400 block ml-1">選擇 AI 解卦模型：</label>
+              <select
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                className="w-full bg-black/60 border border-white/10 rounded-xl p-3 focus:outline-none focus:border-gold-500/40 text-xs text-gold-200"
+              >
+                <option value="gemini-2.0-flash">Gemini 2.0 Flash (推薦 - 高速且支援最廣)</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash (推薦 - 最新主力模型)</option>
+                <option value="gemini-2.5-pro">Gemini 2.5 Pro (高推理深度 - 適合複雜分析)</option>
+                <option value="gemini-3.5-flash">Gemini 3.5 Flash (新世代中階)</option>
+                <option value="gemini-flash-latest">Gemini 1.5 Flash (舊版備用)</option>
+                <option value="gemini-pro-latest">Gemini 1.5 Pro (舊版備用)</option>
+              </select>
+            </div>
+
+            {/* 儲存按鈕 */}
+            <button
+              onClick={() => onSave(key, model)}
+              className="w-full bg-gradient-to-r from-gold-700 to-gold-500 text-black font-bold py-3 rounded-xl hover:brightness-110 transition-all text-xs font-serif"
+            >
+              儲存配置
+            </button>
+          </div>
+        </div>
+      );
+    };
+
+    // 啟動渲染
+    const container = document.getElementById('root');
+    const root = ReactDOM.createRoot(container);
+    root.render(<PlumBlossomApp />);
+  </script>
+
+  <!-- Register Service Worker for PWA -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((reg) => console.log('Service Worker Registered successfully! Scope:', reg.scope))
+          .catch((err) => console.error('Service Worker registration failed:', err));
+      });
+    }
+  </script>
+</body>
+</html>
