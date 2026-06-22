@@ -1,4 +1,4 @@
-const CACHE_NAME = 'plum-divination-v1';
+const CACHE_NAME = 'plum-divination-v6';
 const ASSETS = [
   './',
   './index.html',
@@ -11,7 +11,7 @@ const ASSETS = [
   'https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&family=Outfit:wght@300;400;500;700&display=swap',
   'https://unpkg.com/react@18/umd/react.production.min.js',
   'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
-  'https://unpkg.com/@babel/standalone/babel.min.js',
+  'https://unpkg.com/@babel/standalone@7/babel.min.js',
   'https://cdn.tailwindcss.com',
   'https://cdn.jsdelivr.net/npm/cnchar/cnchar.min.js',
   'https://cdn.jsdelivr.net/npm/cnchar-trad/cnchar.trad.min.js'
@@ -27,7 +27,7 @@ self.addEventListener('install', (e) => {
   );
 });
 
-// Activate Event - Clean up outdated caches
+// Activate Event - Clean up old version caches
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) => {
@@ -43,7 +43,7 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Fetch Event - Cache First Strategy with Live API Bypass
+// Fetch Event - Cache-First Strategy with Live API Bypass
 self.addEventListener('fetch', (e) => {
   // Only handle standard HTTP/HTTPS schemes
   if (!e.request.url.startsWith('http')) return;
@@ -60,8 +60,8 @@ self.addEventListener('fetch', (e) => {
         return cachedResponse;
       }
       return fetch(e.request).then((networkResponse) => {
-        // Cache dynamically loaded assets (like fonts, scripts) on the fly
-        if (networkResponse.status === 200) {
+        // Only dynamically cache Google Font binary files (.woff2) to prevent cache poisoning
+        if (networkResponse.status === 200 && e.request.url.includes('fonts.gstatic.com')) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(e.request, responseToCache);
@@ -69,6 +69,8 @@ self.addEventListener('fetch', (e) => {
         }
         return networkResponse;
       });
+    }).catch(() => {
+      // Silent fail for network errors
     })
   );
 });
