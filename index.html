@@ -766,6 +766,11 @@
       const [infoTab, setInfoTab] = useState('general'); // 'general', 'time', 'number', 'char', 'random', 'coin'
       const [showSettings, setShowSettings] = useState(false);
       const [selectedHistory, setSelectedHistory] = useState(null);
+      const [fontSize, setFontSize] = useState(() => {
+        try { return parseInt(safeLocalStorage.getItem('app_font_size')) || 14; } catch { return 14; }
+      });
+      const increaseFontSize = () => setFontSize(prev => { const n = Math.min(prev + 1, 20); safeLocalStorage.setItem('app_font_size', n); return n; });
+      const decreaseFontSize = () => setFontSize(prev => { const n = Math.max(prev - 1, 11); safeLocalStorage.setItem('app_font_size', n); return n; });
 
       // 金錢卦專屬狀態
       const [tossStep, setTossStep] = useState(0); // 0: 尚未開始, 1-6: 當前第幾爻
@@ -1442,7 +1447,7 @@
         const huGuaName = getGuaName(divResult.huShangGua, divResult.huXiaGua);
         const bianGuaName = getGuaName(divResult.bianShangGua, divResult.bianXiaGua);
         
-        const systemPrompt = `你是一位精通邵康節《梅花易數》與《易經》的命理大師。請根據起卦結果與用戶的問題，從事業、感情、財運、家庭、健康五個維度進行深度精確的分析，並給予具體可行的開運建議。請注意體用五行生剋關係。
+        const systemPrompt = `你是一位精通邵康節《梅花易數》與《易經》的命理大師。請根據起卦結果與用戶的問題，從事業、感情、財運、家庭、健康五個維度進行深度精確的分析，並給予具體可行的開運建議。同時請依卦象五行與八卦方位學說，推算出一個最吉利的「方位」（如：東方、南方、西北方等）與兩到三個最吉祥的「顏色」（如：金色、翠綠等）。請注意體用五行生剋關係。
         請嚴格回覆 JSON 格式，不要包含任何額外 markdown 包裝：
         {
           "career": "事業與工作運勢分析...",
@@ -1450,6 +1455,8 @@
           "wealth": "財運與投資狀況分析...",
           "family": "家庭與日常生活狀況...",
           "health": "身心健康防範與建議...",
+          "direction": "最吉利方位與理由（例如：東南方｜木氣旺盛，有助於生發運勢）",
+          "luckyColors": ["顏色一", "顏色二", "顏色三"],
           "summary": "一句話神機批注建議"
         }`;
 
@@ -1498,6 +1505,22 @@
               divResult.tiGua.element === '水' ? '冬季氣旺，注意泌尿系統、腎臟及寒濕侵襲。' :
               '四季末土旺，需多注意腸胃消化系統保養。'
             }`,
+            direction: (() => {
+              const elem = divResult.tiGua.element;
+              if (elem === '木') return '東方｜木氣旺盛，宜朝東方位前進，有利於生機發展';
+              if (elem === '火') return '南方｜火氣旺盛，宜朝南方活動，有助提升人際能見度';
+              if (elem === '金') return '西方｜金氣充盈，宜往西方拓展，利於正財收穫';
+              if (elem === '水') return '北方｜水氣流動，宜朝北方潛行，利於謀略與保護自身';
+              return '中央｜土氣厚重，宜守中處正，穩紮穩打';
+            })(),
+            luckyColors: (() => {
+              const elem = divResult.tiGua.element;
+              if (elem === '木') return ['翠綠色', '青色', '金色'];
+              if (elem === '火') return ['紅色', '橙色', '金色'];
+              if (elem === '金') return ['金色', '白色', '銀色'];
+              if (elem === '水') return ['黑色', '深藍色', '金色'];
+              return ['黃色', '土黃色', '金色'];
+            })(),
             summary: errMessage 
               ? `【AI 連線失敗】已自動為您切換至離線易經卦辭分析。錯誤原因：${errMessage}${modelDiagnostic}`
               : `【離線版解卦】請點擊右上角設定 ⚙ 配置您的 Gemini API Key 以啟用更強大的 AI 深度解卦！`
@@ -1732,14 +1755,28 @@ ${aiAnalysis?.health || '演算中...'}
         <div className="min-h-screen flex flex-col font-sans pb-16 selection:bg-gold-500/30 selection:text-white">
           
           {/* Header 導覽列 */}
-          <header className="sticky top-0 z-40 bg-[#080a09]/80 backdrop-blur-md border-b border-gold-500/10 px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <header className="sticky top-0 z-40 bg-[#080a09]/80 backdrop-blur-md border-b border-gold-500/10 px-4 py-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <span className="text-2xl text-gold-500 drop-shadow-[0_0_10px_rgba(212,175,55,0.4)]">☯</span>
-              <h1 className="text-lg font-bold font-serif tracking-widest bg-gradient-to-r from-gold-200 via-gold-400 to-amber-500 bg-clip-text text-transparent">
+              <h1 className="text-sm sm:text-lg font-bold font-serif tracking-widest bg-gradient-to-r from-gold-200 via-gold-400 to-amber-500 bg-clip-text text-transparent">
                 梅花易數 ． 智能占卜
               </h1>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              {/* 字體大小調整按鈕 */}
+              <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-2 py-1">
+                <button
+                  onClick={decreaseFontSize}
+                  className="w-6 h-6 flex items-center justify-center text-neutral-300 hover:text-gold-300 active:scale-90 transition-all text-lg font-bold leading-none"
+                  title="縮小字體"
+                >－</button>
+                <span className="text-[10px] text-neutral-500 font-mono w-5 text-center select-none">{fontSize}</span>
+                <button
+                  onClick={increaseFontSize}
+                  className="w-6 h-6 flex items-center justify-center text-neutral-300 hover:text-gold-300 active:scale-90 transition-all text-lg font-bold leading-none"
+                  title="放大字體"
+                >＋</button>
+              </div>
               <button 
                 onClick={() => { setInfoTab(mode); setShowInfo(true); }}
                 className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 border border-white/10 hover:border-gold-500/40 text-neutral-300 hover:text-gold-400 active:scale-95 transition-all"
@@ -1760,7 +1797,7 @@ ${aiAnalysis?.health || '演算中...'}
 
 
           {/* 主體布局：響應式雙欄 (Desktop side-by-side, Mobile single-column) */}
-          <main className="max-w-7xl mx-auto w-full px-4 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
+          <main className="max-w-7xl mx-auto w-full px-4 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1" style={{fontSize: `${fontSize}px`}}>
             
             {/* 左側：起卦操作與設定欄 (佔 5 欄) */}
             <section className="lg:col-span-5 space-y-6">
@@ -2249,13 +2286,87 @@ ${aiAnalysis?.health || '演算中...'}
                       AI 六爻靈動深度解卦
                     </h3>
 
-                    {/* AI 解卦格線 */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <AnalysisCard icon="💼" title="事業工作" content={aiAnalysis?.career} loading={!aiAnalysis} />
-                      <AnalysisCard icon="❤️" title="情感人際" content={aiAnalysis?.love} loading={!aiAnalysis} />
-                      <AnalysisCard icon="💵" title="財富狀況" content={aiAnalysis?.wealth} loading={!aiAnalysis} />
-                      <AnalysisCard icon="🏠" title="家庭生活" content={aiAnalysis?.family} loading={!aiAnalysis} />
-                      <AnalysisCard icon="🏥" title="健康預警" content={aiAnalysis?.health} loading={!aiAnalysis} className="sm:col-span-2" />
+                    {/* 方位與吉色卡片 */}
+                    {(aiAnalysis?.direction || aiAnalysis?.luckyColors) && (
+                      <div className="grid grid-cols-2 gap-3">
+                        {/* 吉利方位 */}
+                        <div className="glass-card p-4 rounded-[1.5rem] border border-jade-500/20 flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+
+                               <circle cx="12" cy="12" r="10"/>
+
+                               <polygon points="12,4 14.5,12 12,10.5 9.5,12" fill="#D4AF37" stroke="none"/>
+
+                               <polygon points="12,20 9.5,12 12,13.5 14.5,12" fill="#4e8b72" stroke="none"/>
+
+                               <line x1="2" y1="12" x2="4.5" y2="12"/>
+
+                               <line x1="19.5" y1="12" x2="22" y2="12"/>
+
+                             </svg>
+                            <span className="text-[11px] font-bold text-jade-300 font-serif tracking-wider">吉利方位</span>
+                          </div>
+                          {aiAnalysis?.direction ? (
+                            <div>
+                              <div className="text-gold-300 font-bold font-serif text-sm">{aiAnalysis.direction.split('｜')[0]}</div>
+                              <div className="text-neutral-400 text-[10px] mt-1 leading-snug font-serif">{aiAnalysis.direction.split('｜')[1] || ''}</div>
+                            </div>
+                          ) : (
+                            <div className="animate-pulse space-y-1.5"><div className="h-2 bg-white/10 rounded w-16"></div><div className="h-2 bg-white/10 rounded w-24"></div></div>
+                          )}
+                        </div>
+                        {/* 吉祥顏色 */}
+                        <div className="glass-card p-4 rounded-[1.5rem] border border-gold-500/20 flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+
+                               <circle cx="12" cy="12" r="10"/>
+
+                               <circle cx="9" cy="10" r="2.2"/>
+
+                               <circle cx="15.5" cy="10" r="1.3" fill="#D4AF37" stroke="#D4AF37"/>
+
+                               <circle cx="12" cy="15.5" r="1.5"/>
+
+                             </svg>
+                            <span className="text-[11px] font-bold text-gold-300 font-serif tracking-wider">吉祥顏色</span>
+                          </div>
+                          {aiAnalysis?.luckyColors ? (
+                            <div className="flex flex-wrap gap-1.5">
+                              {aiAnalysis.luckyColors.map((color, i) => (
+                                <span key={i} className="px-2 py-0.5 rounded-full bg-gold-500/10 border border-gold-500/20 text-gold-300 text-[10px] font-serif">{color}</span>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="animate-pulse space-y-1.5"><div className="h-2 bg-white/10 rounded w-20"></div></div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* AI 解卦折疊面板 */}
+                    <div className="space-y-2">
+                      <AnalysisCard
+                         icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>}
+                         title="事業工作" content={aiAnalysis?.career} loading={!aiAnalysis}
+                       />
+                      <AnalysisCard
+                         icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>}
+                         title="情感人際" content={aiAnalysis?.love} loading={!aiAnalysis}
+                       />
+                      <AnalysisCard
+                         icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6 L15.5 12 L12 18 L8.5 12 Z"/></svg>}
+                         title="財富狀況" content={aiAnalysis?.wealth} loading={!aiAnalysis}
+                       />
+                      <AnalysisCard
+                         icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
+                         title="家庭生活" content={aiAnalysis?.family} loading={!aiAnalysis}
+                       />
+                      <AnalysisCard
+                         icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="7.5" x2="12" y2="16.5"/><line x1="7.5" y1="12" x2="16.5" y2="12"/><path d="M15.5 17 Q19 13.5 17 10.5" strokeWidth="0.9" opacity="0.55"/></svg>}
+                         title="健康預警" content={aiAnalysis?.health} loading={!aiAnalysis}
+                       />
                     </div>
 
                     {/* 神機總結 */}
@@ -2590,24 +2701,49 @@ ${aiAnalysis?.health || '演算中...'}
     };
 
     // AI分析項目卡片組件
-    const AnalysisCard = ({ icon, title, content, loading, className = "" }) => {
+    const AnalysisCard = ({ icon, title, content, loading }) => {
+      const [open, setOpen] = useState(false);
+      // 當內容從 loading -> loaded 時，不自動展開，讓使用者自行選擇
       return (
-        <div className={`glass-card p-5 rounded-[1.8rem] transition-all hover:border-gold-500/30 ${className}`}>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-lg">{icon}</span>
-            <span className="font-bold text-xs text-gold-300 font-serif tracking-wider">{title}</span>
-          </div>
-          {loading ? (
-            <div className="space-y-2.5 animate-pulse py-2">
-              <div className="h-2 bg-white/10 rounded w-full"></div>
-              <div className="h-2 bg-white/10 rounded w-5/6"></div>
-              <div className="h-2 bg-white/10 rounded w-2/3"></div>
+        <div className="glass-card rounded-[1.5rem] overflow-hidden transition-all border border-white/5 hover:border-gold-500/20">
+          {/* 折疊標題列 */}
+          <button
+            onClick={() => setOpen(o => !o)}
+            className="w-full flex items-center justify-between px-5 py-3.5 text-left transition-colors hover:bg-white/[0.02] active:bg-white/5"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center">{icon}</span>
+              <span className="font-bold text-sm text-gold-300 font-serif tracking-wider">{title}</span>
+              {loading && <span className="text-[9px] text-neutral-500 font-serif">解析中...</span>}
             </div>
-          ) : (
-            <p className="text-neutral-300 text-xs leading-relaxed font-serif text-justify">
-              {content}
-            </p>
-          )}
+            <div className="flex items-center gap-2">
+              {!loading && !open && content && (
+                <span className="text-[9px] text-neutral-500 font-serif hidden sm:block">點擊展開</span>
+              )}
+              <svg
+                className={`w-4 h-4 text-gold-500/60 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </button>
+          {/* 展開內容 */}
+          <div className={`transition-all duration-300 ease-in-out overflow-hidden ${open ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className="px-5 pb-5 pt-1 border-t border-white/5">
+              {loading ? (
+                <div className="space-y-2.5 animate-pulse py-2">
+                  <div className="h-2 bg-white/10 rounded w-full"></div>
+                  <div className="h-2 bg-white/10 rounded w-5/6"></div>
+                  <div className="h-2 bg-white/10 rounded w-2/3"></div>
+                </div>
+              ) : (
+                <p className="text-neutral-300 leading-relaxed font-serif text-justify" style={{fontSize: 'inherit'}}>
+                  {content}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       );
     };
