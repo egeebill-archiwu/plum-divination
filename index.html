@@ -833,28 +833,6 @@
         safeLocalStorage.setItem('divination_history', JSON.stringify(history));
       }, [history]);
 
-      // 處理影片在行動端上的自動播放限制與聲音相容性
-      useEffect(() => {
-        if (isPlayingVideo && videoRef.current) {
-          // 先嘗試有聲播放
-          videoRef.current.muted = false;
-          const playPromise = videoRef.current.play();
-          
-          if (playPromise !== undefined) {
-            playPromise.catch(error => {
-              console.warn("有聲自動播放被瀏覽器阻擋，切換為靜音播放:", error);
-              if (videoRef.current) {
-                videoRef.current.muted = true;
-                videoRef.current.play().catch(err => {
-                  console.error("靜音播放依然失敗，自動跳過影片:", err);
-                  handleVideoEnd();
-                });
-              }
-            });
-          }
-        }
-      }, [isPlayingVideo]);
-
       // 儲存金鑰與模型設定
       const saveSettings = (key, model) => {
         setCustomApiKey(key);
@@ -1402,7 +1380,26 @@
           detailsText = `隨機感應起卦`;
         }
 
-        // 2. 開始播放影片動畫
+        // 2. 啟動影片播放（在主執行緒的點擊事件同步調用，滿足行動裝置的安全限制）
+        if (videoRef.current) {
+          videoRef.current.muted = false; // 先嘗試有聲播放
+          videoRef.current.currentTime = 0; // 從頭開始
+          const playPromise = videoRef.current.play();
+          
+          if (playPromise !== undefined) {
+            playPromise.catch(error => {
+              console.warn("行動端有聲自動播放被阻擋，嘗試靜音播放:", error);
+              if (videoRef.current) {
+                videoRef.current.muted = true;
+                videoRef.current.play().catch(err => {
+                  console.error("靜音播放也失敗，直接跳過影片", err);
+                  handleVideoEnd();
+                });
+              }
+            });
+          }
+        }
+
         setIsPlayingVideo(true);
         setIsAnimating(true);
         setAiAnalysis(null);
@@ -1461,6 +1458,11 @@
       const handleVideoEnd = () => {
         setIsPlayingVideo(false);
         setIsAnimating(false);
+        if (videoRef.current) {
+          try {
+            videoRef.current.pause();
+          } catch (e) {}
+        }
         
         // 延遲以確保 DOM 已渲染，然後平滑捲動到結果區塊
         setTimeout(() => {
@@ -2643,35 +2645,37 @@ ${aiAnalysis?.health || '演算中...'}
           )}
 
           {/* 占卜儀式影片動畫 */}
-          {isPlayingVideo && (
-            <div className="fixed inset-0 z-50 bg-[#080a09] flex flex-col items-center justify-center p-4">
-              <button 
-                onClick={handleVideoEnd}
-                className="absolute top-6 right-6 px-4 py-2 bg-black/60 hover:bg-black/80 border border-gold-500/30 text-gold-300 text-xs font-serif rounded-full active:scale-95 transition-all z-50 flex items-center gap-1.5"
-              >
-                跳過動畫 ➜
-              </button>
-              <div className="w-full max-w-4xl aspect-video rounded-3xl overflow-hidden border border-gold-500/20 shadow-[0_0_50px_rgba(212,175,55,0.15)] bg-black relative">
-                <video
-                  ref={videoRef}
-                  src="./龜甲與三枚銅錢(壓縮版).mp4"
-                  className="w-full h-full object-contain"
-                  autoPlay
-                  playsInline
-                  webkit-playsinline="true"
-                  onEnded={handleVideoEnd}
-                  onError={(e) => {
-                    console.error("Video play error:", e);
-                    handleVideoEnd();
-                  }}
-                />
-              </div>
-              <div className="mt-6 text-center space-y-1">
-                <span className="text-[10px] text-gold-500/50 font-serif tracking-[0.4em] uppercase block">Divination Ritual</span>
-                <p className="text-xs text-neutral-400 font-serif italic">正在誠心起卦，推演天機，請靜心等待...</p>
-              </div>
+          <div 
+            className={`fixed inset-0 z-50 bg-[#080a09] flex flex-col items-center justify-center p-4 transition-all duration-300 ${
+              isPlayingVideo ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <button 
+              onClick={handleVideoEnd}
+              className="absolute top-6 right-6 px-4 py-2 bg-black/60 hover:bg-black/80 border border-gold-500/30 text-gold-300 text-xs font-serif rounded-full active:scale-95 transition-all z-50 flex items-center gap-1.5"
+            >
+              跳過動畫 ➜
+            </button>
+            <div className="w-full max-w-4xl aspect-video rounded-3xl overflow-hidden border border-gold-500/20 shadow-[0_0_50px_rgba(212,175,55,0.15)] bg-black relative">
+              <video
+                ref={videoRef}
+                src="./龜甲與三枚銅錢(壓縮版).mp4"
+                className="w-full h-full object-contain"
+                preload="auto"
+                playsInline
+                webkit-playsinline="true"
+                onEnded={handleVideoEnd}
+                onError={(e) => {
+                  console.error("Video play error:", e);
+                  handleVideoEnd();
+                }}
+              />
             </div>
-          )}
+            <div className="mt-6 text-center space-y-1">
+              <span className="text-[10px] text-gold-500/50 font-serif tracking-[0.4em] uppercase block">Divination Ritual</span>
+              <p className="text-xs text-neutral-400 font-serif italic">正在誠心起卦，推演天機，請靜心等待...</p>
+            </div>
+          </div>
 
         </div>
       );
