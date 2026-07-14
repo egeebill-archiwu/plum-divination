@@ -1380,22 +1380,16 @@
           detailsText = `隨機感應起卦`;
         }
 
-        // 2. 啟動影片播放（在主執行緒的點擊事件同步調用，滿足行動裝置的安全限制）
+        // 2. 啟動影片播放（影片本身靜音，保證行動端/Safari 自動播放立即啟動不卡住）
         if (videoRef.current) {
-          videoRef.current.muted = false; // 先嘗試有聲播放
+          videoRef.current.muted = true;
           videoRef.current.currentTime = 0; // 從頭開始
           const playPromise = videoRef.current.play();
           
           if (playPromise !== undefined) {
             playPromise.catch(error => {
-              console.warn("行動端有聲自動播放被阻擋，嘗試靜音播放:", error);
-              if (videoRef.current) {
-                videoRef.current.muted = true;
-                videoRef.current.play().catch(err => {
-                  console.error("靜音播放也失敗，直接跳過影片", err);
-                  handleVideoEnd();
-                });
-              }
+              console.error("影片自動播放失敗，直接跳過", error);
+              handleVideoEnd();
             });
           }
         }
@@ -1404,6 +1398,9 @@
         setIsAnimating(true);
         setAiAnalysis(null);
         setResult(null);
+
+        // 同步在使用者點擊的主執行緒中開啟有聲 Web Audio API 起卦音效（iOS 行動端完美支援，不卡頓）
+        playDivinationSound();
 
         // 3. 立即在背景計算本卦、體卦、用卦
         const shangGua = getBagua(n1);
@@ -1458,6 +1455,7 @@
       const handleVideoEnd = () => {
         setIsPlayingVideo(false);
         setIsAnimating(false);
+        stopDivinationSound(); // 停止合成音效
         if (videoRef.current) {
           try {
             videoRef.current.pause();
@@ -2664,6 +2662,7 @@ ${aiAnalysis?.health || '演算中...'}
                 preload="auto"
                 playsInline
                 webkit-playsinline="true"
+                muted
                 onEnded={handleVideoEnd}
                 onError={(e) => {
                   console.error("Video play error:", e);
@@ -2885,6 +2884,22 @@ ${aiAnalysis?.health || '演算中...'}
               className="w-full bg-gradient-to-r from-gold-700 to-gold-500 text-black font-bold py-3 rounded-xl hover:brightness-110 transition-all text-xs font-serif"
             >
               儲存配置
+            </button>
+
+            {/* 快取清除與重置按鈕 (供手動更新 app 時強制清空快取) */}
+            <button
+              onClick={() => {
+                if (confirm("確定要清除所有系統快取並重設嗎？這將會強制重新載入頁面並更新。")) {
+                  if (typeof window.clearSystemCache === 'function') {
+                    window.clearSystemCache();
+                  } else {
+                    alert("快取清除工具尚未載入，請手動重新整理頁面。");
+                  }
+                }
+              }}
+              className="w-full bg-red-950/40 border border-red-500/30 text-red-400 hover:text-red-300 font-bold py-2.5 rounded-xl transition-all text-[10px] font-serif"
+            >
+              🧹 清除系統快取並重設
             </button>
           </div>
         </div>
