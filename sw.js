@@ -1,4 +1,4 @@
-const CACHE_NAME = 'plum-divination-v12';
+const CACHE_NAME = 'plum-divination-v13';
 const ASSETS = [
   './',
   './index.html',

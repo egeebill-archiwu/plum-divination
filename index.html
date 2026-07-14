@@ -766,6 +766,8 @@
       const [infoTab, setInfoTab] = useState('general'); // 'general', 'time', 'number', 'char', 'random', 'coin'
       const [showSettings, setShowSettings] = useState(false);
       const [selectedHistory, setSelectedHistory] = useState(null);
+      const [isPlayingVideo, setIsPlayingVideo] = useState(false);
+      const videoRef = useRef(null);
       const [fontSize, setFontSize] = useState(() => {
         try { return parseInt(safeLocalStorage.getItem('app_font_size')) || 14; } catch { return 14; }
       });
@@ -1378,39 +1380,32 @@
           detailsText = `隨機感應起卦`;
         }
 
-        // 2. 開始撥放搖晃與噴灑金幣動畫
+        // 2. 開始播放影片動畫
+        setIsPlayingVideo(true);
         setIsAnimating(true);
-        playDivinationSound();
         setAiAnalysis(null);
         setResult(null);
 
-        // 3. 延遲 1.8 秒以配合動畫完成
-        await new Promise(resolve => setTimeout(resolve, 1800));
-
-        // 4. 計算本卦、體卦、用卦
+        // 3. 立即在背景計算本卦、體卦、用卦
         const shangGua = getBagua(n1);
         const xiaGua = getBagua(n2);
         const movingYao = getMovingYao(n3); // 1-6 爻
 
-        // 動爻在下卦 (1,2,3爻) -> 上卦為體，下卦為用。動爻在上卦 (4,5,6爻) -> 下卦為體，上卦為用。
         const tiGua = movingYao <= 3 ? shangGua : xiaGua;
         const yongGua = movingYao <= 3 ? xiaGua : shangGua;
         const basicAnalysis = analyzeElements(tiGua, yongGua);
 
-        // 5. 計算互卦 (取本卦 2,3,4爻作下互卦，3,4,5爻作上互卦)
         const mainLines = getHexagramLines(shangGua.name, xiaGua.name);
         const huXiaLines = [mainLines[1], mainLines[2], mainLines[3]];
         const huShangLines = [mainLines[2], mainLines[3], mainLines[4]];
         const huXiaGua = getTrigramFromLines(huXiaLines);
         const huShangGua = getTrigramFromLines(huShangLines);
 
-        // 6. 計算變卦 (將本卦動爻取反)
         const bianLines = [...mainLines];
         bianLines[movingYao - 1] = bianLines[movingYao - 1] === 1 ? 0 : 1;
         const bianXiaGua = getTrigramFromLines([bianLines[0], bianLines[1], bianLines[2]]);
         const bianShangGua = getTrigramFromLines([bianLines[3], bianLines[4], bianLines[5]]);
         
-        // 變卦的體與用 (變卦中與本卦體卦同位置的為體，動爻轉變後的卦為變)
         const bianTiGua = movingYao <= 3 ? bianShangGua : bianXiaGua;
         const bianYongGua = movingYao <= 3 ? bianXiaGua : bianShangGua;
         const bianAnalysis = analyzeElements(bianTiGua, bianYongGua);
@@ -1433,12 +1428,25 @@
           timestamp: new Date().toLocaleString()
         };
 
+        // 4. 設定卦象結果（此時會隱藏在全螢幕影片之下）
         setResult(divinationResult);
-        setIsAnimating(false);
-        stopDivinationSound();
 
-        // 7. 開始呼叫 Gemini AI
-        await runAiInterpretation(divinationResult);
+        // 5. 立即在背景開始呼叫 Gemini AI，以節省等待時間
+        runAiInterpretation(divinationResult);
+      };
+
+      // 影片播放結束或跳過影片處理函數
+      const handleVideoEnd = () => {
+        setIsPlayingVideo(false);
+        setIsAnimating(false);
+        
+        // 延遲以確保 DOM 已渲染，然後平滑捲動到結果區塊
+        setTimeout(() => {
+          const el = document.getElementById('divination-results');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
       };
 
       // 呼叫 Gemini 進行解卦
@@ -2116,7 +2124,7 @@ ${aiAnalysis?.health || '演算中...'}
             </section>
 
             {/* 右側：卦象視覺化與解卦報告欄 (佔 7 欄) */}
-            <section className="lg:col-span-7 space-y-6">
+            <section id="divination-results" className="lg:col-span-7 space-y-6">
               
               {!result ? (
                 /* 未起卦時的引導介面與動畫推演指示 */
@@ -2609,6 +2617,36 @@ ${aiAnalysis?.health || '演算中...'}
                 onSave={saveSettings} 
                 onClose={() => setShowSettings(false)} 
               />
+            </div>
+          )}
+
+          {/* 占卜儀式影片動畫 */}
+          {isPlayingVideo && (
+            <div className="fixed inset-0 z-50 bg-[#080a09] flex flex-col items-center justify-center p-4">
+              <button 
+                onClick={handleVideoEnd}
+                className="absolute top-6 right-6 px-4 py-2 bg-black/60 hover:bg-black/80 border border-gold-500/30 text-gold-300 text-xs font-serif rounded-full active:scale-95 transition-all z-50 flex items-center gap-1.5"
+              >
+                跳過動畫 ➜
+              </button>
+              <div className="w-full max-w-4xl aspect-video rounded-3xl overflow-hidden border border-gold-500/20 shadow-[0_0_50px_rgba(212,175,55,0.15)] bg-black relative">
+                <video
+                  ref={videoRef}
+                  src="./動畫/龜甲與三枚銅錢(壓縮版).mp4"
+                  className="w-full h-full object-contain"
+                  autoPlay
+                  playsInline
+                  onEnded={handleVideoEnd}
+                  onError={(e) => {
+                    console.error("Video play error:", e);
+                    handleVideoEnd();
+                  }}
+                />
+              </div>
+              <div className="mt-6 text-center space-y-1">
+                <span className="text-[10px] text-gold-500/50 font-serif tracking-[0.4em] uppercase block">Divination Ritual</span>
+                <p className="text-xs text-neutral-400 font-serif italic">正在誠心起卦，推演天機，請靜心等待...</p>
+              </div>
             </div>
           )}
 
