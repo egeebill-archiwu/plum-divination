@@ -833,6 +833,28 @@
         safeLocalStorage.setItem('divination_history', JSON.stringify(history));
       }, [history]);
 
+      // 處理影片在行動端上的自動播放限制與聲音相容性
+      useEffect(() => {
+        if (isPlayingVideo && videoRef.current) {
+          // 先嘗試有聲播放
+          videoRef.current.muted = false;
+          const playPromise = videoRef.current.play();
+          
+          if (playPromise !== undefined) {
+            playPromise.catch(error => {
+              console.warn("有聲自動播放被瀏覽器阻擋，切換為靜音播放:", error);
+              if (videoRef.current) {
+                videoRef.current.muted = true;
+                videoRef.current.play().catch(err => {
+                  console.error("靜音播放依然失敗，自動跳過影片:", err);
+                  handleVideoEnd();
+                });
+              }
+            });
+          }
+        }
+      }, [isPlayingVideo]);
+
       // 儲存金鑰與模型設定
       const saveSettings = (key, model) => {
         setCustomApiKey(key);
@@ -2636,6 +2658,7 @@ ${aiAnalysis?.health || '演算中...'}
                   className="w-full h-full object-contain"
                   autoPlay
                   playsInline
+                  webkit-playsinline="true"
                   onEnded={handleVideoEnd}
                   onError={(e) => {
                     console.error("Video play error:", e);
