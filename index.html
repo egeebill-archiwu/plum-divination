@@ -1380,16 +1380,22 @@
           detailsText = `隨機感應起卦`;
         }
 
-        // 2. 啟動影片播放（影片本身靜音，保證行動端/Safari 自動播放立即啟動不卡住）
+        // 2. 啟動影片播放（以「開始深度占卜」點擊按鈕為播放鍵，嘗試播放影片自帶的音效）
         if (videoRef.current) {
-          videoRef.current.muted = true;
+          videoRef.current.muted = false; // 有聲播放
           videoRef.current.currentTime = 0; // 從頭開始
           const playPromise = videoRef.current.play();
           
           if (playPromise !== undefined) {
             playPromise.catch(error => {
-              console.error("影片自動播放失敗，直接跳過", error);
-              handleVideoEnd();
+              console.warn("影片有聲自動播放被阻擋，切換為靜音播放:", error);
+              if (videoRef.current) {
+                videoRef.current.muted = true;
+                videoRef.current.play().catch(err => {
+                  console.error("靜音播放也失敗，直接跳過影片", err);
+                  handleVideoEnd();
+                });
+              }
             });
           }
         }
@@ -1398,9 +1404,6 @@
         setIsAnimating(true);
         setAiAnalysis(null);
         setResult(null);
-
-        // 同步在使用者點擊的主執行緒中開啟有聲 Web Audio API 起卦音效（iOS 行動端完美支援，不卡頓）
-        playDivinationSound();
 
         // 3. 立即在背景計算本卦、體卦、用卦
         const shangGua = getBagua(n1);
@@ -2662,7 +2665,6 @@ ${aiAnalysis?.health || '演算中...'}
                 preload="auto"
                 playsInline
                 webkit-playsinline="true"
-                muted
                 onEnded={handleVideoEnd}
                 onError={(e) => {
                   console.error("Video play error:", e);

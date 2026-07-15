@@ -1,4 +1,4 @@
-const CACHE_NAME = 'plum-divination-v18';
+const CACHE_NAME = 'plum-divination-v19';
 const ASSETS = [
   './',
   './index.html',
@@ -47,6 +47,11 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   // Only handle standard HTTP/HTTPS schemes
   if (!e.request.url.startsWith('http')) return;
+
+  // Bypass service worker for video files (mp4) to support native range requests on Safari/Chrome
+  if (e.request.url.endsWith('.mp4') || e.request.url.includes('.mp4')) {
+    return; // Let the browser handle the fetch natively!
+  }
 
   // Bypass cache for Gemini AI APIs
   if (e.request.url.includes('generativelanguage.googleapis.com')) {
